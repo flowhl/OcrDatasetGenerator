@@ -1,0 +1,438 @@
+﻿<UserControl x:Class="OCRTrainingImageGenerator.Controls.OCRSettingsEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="900">
+
+    <UserControl.Resources>
+        <Style x:Key="GroupBoxStyle" TargetType="GroupBox">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
+        <Style x:Key="LabelStyle" TargetType="Label">
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Width" Value="120"/>
+        </Style>
+
+        <Style x:Key="TextBoxStyle" TargetType="TextBox">
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+
+        <Style x:Key="CheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+
+        <Style x:Key="ButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="10,2"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- File Operations and Preview -->
+        <Grid Grid.Row="0" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- File Operations -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <Button Name="LoadButton" Content="Load Settings" Style="{StaticResource ButtonStyle}" Click="LoadButton_Click"/>
+                <Button Name="SaveButton" Content="Save Settings" Style="{StaticResource ButtonStyle}" Click="SaveButton_Click"/>
+                <Button Name="SaveAsButton" Content="Save As..." Style="{StaticResource ButtonStyle}" Click="SaveAsButton_Click"/>
+                <TextBlock Name="CurrentFileLabel" VerticalAlignment="Center" Margin="20,0,0,0" Text="No file loaded" FontStyle="Italic"/>
+            </StackPanel>
+
+            <!-- Preview Panel -->
+            <GroupBox Grid.Column="1" Header="Preview" Margin="20,0,0,0" Padding="10">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                        <Button Name="GeneratePreviewButton" Content="Generate Preview" Style="{StaticResource ButtonStyle}" Click="GeneratePreview_Click"/>
+                        <Button Name="AutoPreviewButton" Content="Auto Preview" Style="{StaticResource ButtonStyle}" Click="ToggleAutoPreview_Click"/>
+                        <CheckBox Name="AutoPreviewCheck" Content="Auto" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                    </StackPanel>
+
+                    <Border Name="PreviewBorder" BorderBrush="Gray" BorderThickness="1" Background="White" 
+                            Width="300" Height="100" Margin="0,5,0,0">
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <Image Name="PreviewImage" Stretch="None"/>
+                        </ScrollViewer>
+                    </Border>
+
+                    <TextBlock Name="PreviewStatusLabel" Text="Click 'Generate Preview' to see results" 
+                               FontStyle="Italic" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                </StackPanel>
+            </GroupBox>
+        </Grid>
+
+        <!-- Settings -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="10">
+
+                <!-- Text Content -->
+                <GroupBox Header="Text Content" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="Strings File:" Style="{StaticResource LabelStyle}"/>
+                            <TextBox Name="StringsFilePathBox" Style="{StaticResource TextBoxStyle}" Width="300"/>
+                            <Button Content="Browse..." Style="{StaticResource ButtonStyle}" Click="BrowseStringsFile_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Fonts -->
+                <GroupBox Header="Fonts / Text" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="Font Folder:" Style="{StaticResource LabelStyle}"/>
+                            <TextBox Name="FontFolderPathBox" Style="{StaticResource TextBoxStyle}" Width="300"/>
+                            <Button Content="Browse..." Style="{StaticResource ButtonStyle}" Click="BrowseFontFolder_Click"/>
+                        </StackPanel>
+
+                        <!-- Font Size -->
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Label Content="Font Size:" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Name="FontSizeRangeCheck" Content="Use Range" Style="{StaticResource CheckBoxStyle}" Checked="FontSizeRange_Changed" Unchecked="FontSizeRange_Changed"/>
+                            <Label Content="Fixed:" Width="40"/>
+                            <TextBox Name="FontSizeFixedBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Min:" Width="30"/>
+                            <TextBox Name="FontSizeMinBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Max:" Width="30"/>
+                            <TextBox Name="FontSizeMaxBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                        </StackPanel>
+
+                        <!-- Character Spacing -->
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Label Content="Char Spacing:" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Name="CharSpacingRangeCheck" Content="Use Range" Style="{StaticResource CheckBoxStyle}" Checked="CharSpacingRange_Changed" Unchecked="CharSpacingRange_Changed"/>
+                            <Label Content="Fixed:" Width="40"/>
+                            <TextBox Name="CharSpacingFixedBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Min:" Width="30"/>
+                            <TextBox Name="CharSpacingMinBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Max:" Width="30"/>
+                            <TextBox Name="CharSpacingMaxBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                        </StackPanel>
+
+                        <!-- Line Spacing -->
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Label Content="Line Spacing:" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Name="LineSpacingRangeCheck" Content="Use Range" Style="{StaticResource CheckBoxStyle}" Checked="LineSpacingRange_Changed" Unchecked="LineSpacingRange_Changed"/>
+                            <Label Content="Fixed:" Width="40"/>
+                            <TextBox Name="LineSpacingFixedBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Min:" Width="30"/>
+                            <TextBox Name="LineSpacingMinBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Max:" Width="30"/>
+                            <TextBox Name="LineSpacingMaxBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                        </StackPanel>
+
+                        <!-- Alignment -->
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Label Content="H. Alignment:" Style="{StaticResource LabelStyle}"/>
+                            <ComboBox Name="HorizontalAlignmentBox" Width="100" Height="25"/>
+                            <Label Content="V. Alignment:" Width="90" Margin="20,0,0,0"/>
+                            <ComboBox Name="VerticalAlignmentBox" Width="100" Height="25"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Colors -->
+                <GroupBox Header="Colors" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <!-- Foreground Colors -->
+                        <StackPanel>
+                            <Label Content="Foreground Colors:" FontWeight="Bold"/>
+                            <StackPanel Orientation="Horizontal">
+                                <ListBox Name="ForegroundColorsList" Width="200" Height="100"/>
+                                <StackPanel Margin="10,0,0,0">
+                                    <Button Content="Add Color" Style="{StaticResource ButtonStyle}" Click="AddForegroundColor_Click"/>
+                                    <Button Content="Remove" Style="{StaticResource ButtonStyle}" Click="RemoveForegroundColor_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Background -->
+                        <StackPanel Margin="0,10,0,0">
+                            <Label Content="Background:" FontWeight="Bold"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Label Content="Type:" Width="50"/>
+                                <ComboBox Name="BackgroundTypeBox" Width="120" Height="25" SelectionChanged="BackgroundType_Changed"/>
+                            </StackPanel>
+
+                            <StackPanel Name="SolidColorPanel" Orientation="Horizontal" Margin="0,5,0,0">
+                                <Label Content="Color:" Width="50"/>
+                                <Rectangle Name="SolidColorRect" Width="30" Height="25" Stroke="Black" StrokeThickness="1"/>
+                                <Button Content="Change" Style="{StaticResource ButtonStyle}" Click="ChangeSolidColor_Click"/>
+                            </StackPanel>
+
+                            <StackPanel Name="GradientPanel" Visibility="Collapsed" Margin="0,5,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Content="Start:" Width="50"/>
+                                    <Rectangle Name="GradientStartRect" Width="30" Height="25" Stroke="Black" StrokeThickness="1"/>
+                                    <Button Content="Change" Style="{StaticResource ButtonStyle}" Click="ChangeGradientStart_Click"/>
+                                    <Label Content="End:" Width="50" Margin="20,0,0,0"/>
+                                    <Rectangle Name="GradientEndRect" Width="30" Height="25" Stroke="Black" StrokeThickness="1"/>
+                                    <Button Content="Change" Style="{StaticResource ButtonStyle}" Click="ChangeGradientEnd_Click"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                    <Label Content="Angle:" Width="50"/>
+                                    <TextBox Name="GradientAngleBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                                    <Label Content="degrees"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Image Dimensions & Margins -->
+                <GroupBox Header="Dimensions / Margins" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <!-- Initial Height -->
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="Initial Height:" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Name="InitialHeightRangeCheck" Content="Use Range" Style="{StaticResource CheckBoxStyle}" Checked="InitialHeightRange_Changed" Unchecked="InitialHeightRange_Changed"/>
+                            <Label Content="Fixed:" Width="40"/>
+                            <TextBox Name="InitialHeightFixedBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Min:" Width="30"/>
+                            <TextBox Name="InitialHeightMinBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Max:" Width="30"/>
+                            <TextBox Name="InitialHeightMaxBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                        </StackPanel>
+
+                        <!-- Rescaled Height -->
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Label Content="Rescaled Height:" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Name="RescaledHeightRangeCheck" Content="Use Range" Style="{StaticResource CheckBoxStyle}" Checked="RescaledHeightRange_Changed" Unchecked="RescaledHeightRange_Changed"/>
+                            <Label Content="Fixed:" Width="40"/>
+                            <TextBox Name="RescaledHeightFixedBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Min:" Width="30"/>
+                            <TextBox Name="RescaledHeightMinBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Max:" Width="30"/>
+                            <TextBox Name="RescaledHeightMaxBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                        </StackPanel>
+
+                        <!-- Margins -->
+                        <GroupBox Header="Margins" Margin="0,10,0,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Top Margin -->
+                                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+                                    <Label Content="Top:" Width="40"/>
+                                    <CheckBox Name="MarginTopRangeCheck" Content="Range" Style="{StaticResource CheckBoxStyle}" Checked="MarginTopRange_Changed" Unchecked="MarginTopRange_Changed"/>
+                                    <TextBox Name="MarginTopFixedBox" Style="{StaticResource TextBoxStyle}" Width="50"/>
+                                    <TextBox Name="MarginTopMinBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                    <TextBox Name="MarginTopMaxBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                </StackPanel>
+
+                                <!-- Left Margin -->
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
+                                    <Label Content="Left:" Width="40"/>
+                                    <CheckBox Name="MarginLeftRangeCheck" Content="Range" Style="{StaticResource CheckBoxStyle}" Checked="MarginLeftRange_Changed" Unchecked="MarginLeftRange_Changed"/>
+                                    <TextBox Name="MarginLeftFixedBox" Style="{StaticResource TextBoxStyle}" Width="50"/>
+                                    <TextBox Name="MarginLeftMinBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                    <TextBox Name="MarginLeftMaxBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                </StackPanel>
+
+                                <!-- Right Margin -->
+                                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal">
+                                    <Label Content="Right:" Width="40"/>
+                                    <CheckBox Name="MarginRightRangeCheck" Content="Range" Style="{StaticResource CheckBoxStyle}" Checked="MarginRightRange_Changed" Unchecked="MarginRightRange_Changed"/>
+                                    <TextBox Name="MarginRightFixedBox" Style="{StaticResource TextBoxStyle}" Width="50"/>
+                                    <TextBox Name="MarginRightMinBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                    <TextBox Name="MarginRightMaxBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                </StackPanel>
+
+                                <!-- Bottom Margin -->
+                                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
+                                    <Label Content="Bottom:" Width="40"/>
+                                    <CheckBox Name="MarginBottomRangeCheck" Content="Range" Style="{StaticResource CheckBoxStyle}" Checked="MarginBottomRange_Changed" Unchecked="MarginBottomRange_Changed"/>
+                                    <TextBox Name="MarginBottomFixedBox" Style="{StaticResource TextBoxStyle}" Width="50"/>
+                                    <TextBox Name="MarginBottomMinBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                    <TextBox Name="MarginBottomMaxBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                </StackPanel>
+                            </Grid>
+                        </GroupBox>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Distortions -->
+                <GroupBox Header="Distortions" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <!-- Blur -->
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="Blur Radius:" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Name="BlurRangeCheck" Content="Use Range" Style="{StaticResource CheckBoxStyle}" Checked="BlurRange_Changed" Unchecked="BlurRange_Changed"/>
+                            <Label Content="Fixed:" Width="40"/>
+                            <TextBox Name="BlurFixedBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Min:" Width="30"/>
+                            <TextBox Name="BlurMinBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Max:" Width="30"/>
+                            <TextBox Name="BlurMaxBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                        </StackPanel>
+
+                        <!-- Warp -->
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Label Content="Warp Strength:" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Name="WarpRangeCheck" Content="Use Range" Style="{StaticResource CheckBoxStyle}" Checked="WarpRange_Changed" Unchecked="WarpRange_Changed"/>
+                            <Label Content="Fixed:" Width="40"/>
+                            <TextBox Name="WarpFixedBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Min:" Width="30"/>
+                            <TextBox Name="WarpMinBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Max:" Width="30"/>
+                            <TextBox Name="WarpMaxBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                        </StackPanel>
+
+                        <!-- Skew -->
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Label Content="Skew Angle:" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Name="SkewRangeCheck" Content="Use Range" Style="{StaticResource CheckBoxStyle}" Checked="SkewRange_Changed" Unchecked="SkewRange_Changed"/>
+                            <Label Content="Fixed:" Width="40"/>
+                            <TextBox Name="SkewFixedBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Min:" Width="30"/>
+                            <TextBox Name="SkewMinBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Max:" Width="30"/>
+                            <TextBox Name="SkewMaxBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                        </StackPanel>
+
+                        <!-- Rotation -->
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Label Content="Rotation:" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Name="RotationRangeCheck" Content="Use Range" Style="{StaticResource CheckBoxStyle}" Checked="RotationRange_Changed" Unchecked="RotationRange_Changed"/>
+                            <Label Content="Fixed:" Width="40"/>
+                            <TextBox Name="RotationFixedBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Min:" Width="30"/>
+                            <TextBox Name="RotationMinBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Max:" Width="30"/>
+                            <TextBox Name="RotationMaxBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Noise & Effects -->
+                <GroupBox Header="Noise / Effects" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <!-- Gaussian Noise -->
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="Gaussian Noise:" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Name="GaussianNoiseRangeCheck" Content="Use Range" Style="{StaticResource CheckBoxStyle}" Checked="GaussianNoiseRange_Changed" Unchecked="GaussianNoiseRange_Changed"/>
+                            <Label Content="Fixed:" Width="40"/>
+                            <TextBox Name="GaussianNoiseFixedBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Min:" Width="30"/>
+                            <TextBox Name="GaussianNoiseMinBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Max:" Width="30"/>
+                            <TextBox Name="GaussianNoiseMaxBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                        </StackPanel>
+
+                        <!-- Salt & Pepper Noise -->
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Label Content="S&amp;P Noise:" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Name="SaltPepperNoiseRangeCheck" Content="Use Range" Style="{StaticResource CheckBoxStyle}" Checked="SaltPepperNoiseRange_Changed" Unchecked="SaltPepperNoiseRange_Changed"/>
+                            <Label Content="Fixed:" Width="40"/>
+                            <TextBox Name="SaltPepperNoiseFixedBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Min:" Width="30"/>
+                            <TextBox Name="SaltPepperNoiseMinBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Max:" Width="30"/>
+                            <TextBox Name="SaltPepperNoiseMaxBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                        </StackPanel>
+
+                        <!-- JPG Artifacts -->
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <CheckBox Name="EnableJpgArtifactsCheck" Content="Enable JPG Artifacts" Style="{StaticResource CheckBoxStyle}"/>
+                        </StackPanel>
+
+                        <!-- Drop Shadow -->
+                        <GroupBox Header="Drop Shadow" Margin="0,10,0,0">
+                            <StackPanel>
+                                <CheckBox Name="DropShadowEnabledCheck" Content="Enable Drop Shadow" Style="{StaticResource CheckBoxStyle}" Checked="DropShadowEnabled_Changed" Unchecked="DropShadowEnabled_Changed"/>
+
+                                <StackPanel Name="DropShadowPanel" IsEnabled="False">
+                                    <!-- Shadow Color -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <Label Content="Shadow Color:" Width="100"/>
+                                        <Rectangle Name="ShadowColorRect" Width="30" Height="25" Stroke="Black" StrokeThickness="1"/>
+                                        <Button Content="Change" Style="{StaticResource ButtonStyle}" Click="ChangeShadowColor_Click"/>
+                                    </StackPanel>
+
+                                    <!-- Offset X -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <Label Content="Offset X:" Width="100"/>
+                                        <CheckBox Name="ShadowOffsetXRangeCheck" Content="Range" Style="{StaticResource CheckBoxStyle}" Width="60" Checked="ShadowOffsetXRange_Changed" Unchecked="ShadowOffsetXRange_Changed"/>
+                                        <TextBox Name="ShadowOffsetXFixedBox" Style="{StaticResource TextBoxStyle}" Width="50"/>
+                                        <TextBox Name="ShadowOffsetXMinBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                        <TextBox Name="ShadowOffsetXMaxBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                    </StackPanel>
+
+                                    <!-- Offset Y -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <Label Content="Offset Y:" Width="100"/>
+                                        <CheckBox Name="ShadowOffsetYRangeCheck" Content="Range" Style="{StaticResource CheckBoxStyle}" Width="60" Checked="ShadowOffsetYRange_Changed" Unchecked="ShadowOffsetYRange_Changed"/>
+                                        <TextBox Name="ShadowOffsetYFixedBox" Style="{StaticResource TextBoxStyle}" Width="50"/>
+                                        <TextBox Name="ShadowOffsetYMinBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                        <TextBox Name="ShadowOffsetYMaxBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                    </StackPanel>
+
+                                    <!-- Blur Radius -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <Label Content="Blur Radius:" Width="100"/>
+                                        <CheckBox Name="ShadowBlurRangeCheck" Content="Range" Style="{StaticResource CheckBoxStyle}" Width="60" Checked="ShadowBlurRange_Changed" Unchecked="ShadowBlurRange_Changed"/>
+                                        <TextBox Name="ShadowBlurFixedBox" Style="{StaticResource TextBoxStyle}" Width="50"/>
+                                        <TextBox Name="ShadowBlurMinBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                        <TextBox Name="ShadowBlurMaxBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                    </StackPanel>
+
+                                    <!-- Opacity -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <Label Content="Opacity:" Width="100"/>
+                                        <CheckBox Name="ShadowOpacityRangeCheck" Content="Range" Style="{StaticResource CheckBoxStyle}" Width="60" Checked="ShadowOpacityRange_Changed" Unchecked="ShadowOpacityRange_Changed"/>
+                                        <TextBox Name="ShadowOpacityFixedBox" Style="{StaticResource TextBoxStyle}" Width="50"/>
+                                        <TextBox Name="ShadowOpacityMinBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                        <TextBox Name="ShadowOpacityMaxBox" Style="{StaticResource TextBoxStyle}" Width="40"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Output Settings -->
+                <GroupBox Header="Output Settings" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <!-- JPG Quality -->
+                        <StackPanel Orientation="Horizontal">
+                            <Label Content="JPG Quality:" Style="{StaticResource LabelStyle}"/>
+                            <CheckBox Name="JpgQualityRangeCheck" Content="Use Range" Style="{StaticResource CheckBoxStyle}" Checked="JpgQualityRange_Changed" Unchecked="JpgQualityRange_Changed"/>
+                            <Label Content="Fixed:" Width="40"/>
+                            <TextBox Name="JpgQualityFixedBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Min:" Width="30"/>
+                            <TextBox Name="JpgQualityMinBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            <Label Content="Max:" Width="30"/>
+                            <TextBox Name="JpgQualityMaxBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
