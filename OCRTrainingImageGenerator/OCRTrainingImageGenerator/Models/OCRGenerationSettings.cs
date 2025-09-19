@@ -21,7 +21,8 @@ namespace OCRTrainingImageGenerator.Models
 
         // Colors
         public List<ColorSetting> ForegroundColors { get; set; } = new List<ColorSetting>();
-        public BackgroundSetting Background { get; set; } = new BackgroundSetting();
+        // UPDATED: Changed from single BackgroundSetting to list of BackgroundSetting
+        public List<BackgroundSetting> Backgrounds { get; set; } = new List<BackgroundSetting>();
 
         // Image Dimensions & Margins
         public RangeOrFixed InitialHeight { get; set; } = new RangeOrFixed { Fixed = 64 };
@@ -44,6 +45,20 @@ namespace OCRTrainingImageGenerator.Models
 
         // Effects
         public DropShadowSettings DropShadow { get; set; } = new DropShadowSettings();
+
+        // UPDATED: Legacy property for backward compatibility
+        [XmlIgnore]
+        public BackgroundSetting Background
+        {
+            get => Backgrounds.Count > 0 ? Backgrounds[0] : new BackgroundSetting();
+            set
+            {
+                if (Backgrounds.Count == 0)
+                    Backgrounds.Add(value);
+                else
+                    Backgrounds[0] = value;
+            }
+        }
     }
 
     [Serializable]
@@ -89,6 +104,9 @@ namespace OCRTrainingImageGenerator.Models
         public ColorSetting GradientStart { get; set; } = new ColorSetting { R = 255, G = 255, B = 255 };
         public ColorSetting GradientEnd { get; set; } = new ColorSetting { R = 240, G = 240, B = 240 };
         public double GradientAngle { get; set; } = 0;
+
+        // UPDATED: Added name for display purposes
+        public string Name { get; set; } = "Background";
     }
 
     [Serializable]

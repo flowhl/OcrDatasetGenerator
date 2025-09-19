@@ -28,6 +28,7 @@ namespace OCRTrainingImageGenerator.Controls
     {
         public OCRGenerationSettings Settings { get; private set; }
         public ObservableCollection<ColorDisplay> ForegroundColors { get; private set; }
+        public ObservableCollection<BackgroundDisplay> Backgrounds { get; private set; }
 
         private string _currentFilePath;
         private ImageGenerationService _imageService;
@@ -42,6 +43,7 @@ namespace OCRTrainingImageGenerator.Controls
             InitializeComponent();
             Settings = new OCRGenerationSettings();
             ForegroundColors = new ObservableCollection<ColorDisplay>();
+            Backgrounds = new ObservableCollection<BackgroundDisplay>();
             _imageService = new ImageGenerationService();
 
             InitializeUI();
@@ -54,15 +56,14 @@ namespace OCRTrainingImageGenerator.Controls
             // Initialize ComboBoxes
             HorizontalAlignmentBox.ItemsSource = Enum.GetValues(typeof(TextAlignment));
             VerticalAlignmentBox.ItemsSource = Enum.GetValues(typeof(VerticalAlignment));
-            BackgroundTypeBox.ItemsSource = Enum.GetValues(typeof(BackgroundType));
 
             // Set default values
             HorizontalAlignmentBox.SelectedItem = TextAlignment.Left;
             VerticalAlignmentBox.SelectedItem = OCRTrainingImageGenerator.Models.VerticalAlignment.Center;
-            BackgroundTypeBox.SelectedItem = BackgroundType.SolidColor;
 
-            // Initialize foreground colors list
+            // Initialize lists
             ForegroundColorsList.ItemsSource = ForegroundColors;
+            BackgroundsList.ItemsSource = Backgrounds;
         }
 
         private void InitializePreview()
@@ -323,12 +324,24 @@ namespace OCRTrainingImageGenerator.Controls
                 ForegroundColors.Add(new ColorDisplay(color));
             }
 
-            BackgroundTypeBox.SelectedItem = Settings.Background.Type;
-            UpdateBackgroundUI();
-            UpdateColorRectangle(SolidColorRect, Settings.Background.SolidColor);
-            UpdateColorRectangle(GradientStartRect, Settings.Background.GradientStart);
-            UpdateColorRectangle(GradientEndRect, Settings.Background.GradientEnd);
-            GradientAngleBox.Text = Settings.Background.GradientAngle.ToString(CultureInfo.InvariantCulture);
+            // Backgrounds
+            Backgrounds.Clear();
+            foreach (var background in Settings.Backgrounds)
+            {
+                Backgrounds.Add(new BackgroundDisplay(background));
+            }
+
+            // Add default background if none exist
+            if (Backgrounds.Count == 0)
+            {
+                var defaultBackground = new BackgroundSetting
+                {
+                    Name = "Default White",
+                    Type = BackgroundType.SolidColor,
+                    SolidColor = new ColorSetting { R = 255, G = 255, B = 255, A = 255 }
+                };
+                Backgrounds.Add(new BackgroundDisplay(defaultBackground));
+            }
 
             // Dimensions & Margins
             LoadRangeOrFixedToUI(Settings.InitialHeight, InitialHeightRangeCheck, InitialHeightFixedBox, InitialHeightMinBox, InitialHeightMaxBox);
@@ -384,10 +397,11 @@ namespace OCRTrainingImageGenerator.Controls
                 Settings.ForegroundColors.Add(colorDisplay.ColorSetting);
             }
 
-            Settings.Background.Type = (BackgroundType)BackgroundTypeBox.SelectedItem;
-            if (double.TryParse(GradientAngleBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double angle))
+            // Backgrounds
+            Settings.Backgrounds.Clear();
+            foreach (var backgroundDisplay in Backgrounds)
             {
-                Settings.Background.GradientAngle = angle;
+                Settings.Backgrounds.Add(backgroundDisplay.BackgroundSetting);
             }
 
             // Dimensions & Margins
@@ -574,21 +588,6 @@ namespace OCRTrainingImageGenerator.Controls
             UpdateRangeOrFixedUI(ShadowOpacityRangeCheck, ShadowOpacityFixedBox, ShadowOpacityMinBox, ShadowOpacityMaxBox);
         }
 
-        // Background type change
-        private void BackgroundType_Changed(object sender, SelectionChangedEventArgs e)
-        {
-            UpdateBackgroundUI();
-        }
-
-        private void UpdateBackgroundUI()
-        {
-            if (BackgroundTypeBox.SelectedItem == null) return;
-
-            var type = (BackgroundType)BackgroundTypeBox.SelectedItem;
-            SolidColorPanel.Visibility = type == BackgroundType.SolidColor ? Visibility.Visible : Visibility.Collapsed;
-            GradientPanel.Visibility = type == BackgroundType.LinearGradient ? Visibility.Visible : Visibility.Collapsed;
-        }
-
         #endregion
 
         #region File Operations
@@ -744,36 +743,6 @@ namespace OCRTrainingImageGenerator.Controls
             }
         }
 
-        private void ChangeSolidColor_Click(object sender, RoutedEventArgs e)
-        {
-            var color = ChooseColor(Settings.Background.SolidColor.Color);
-            if (color.HasValue)
-            {
-                Settings.Background.SolidColor.Color = color.Value;
-                UpdateColorRectangle(SolidColorRect, Settings.Background.SolidColor);
-            }
-        }
-
-        private void ChangeGradientStart_Click(object sender, RoutedEventArgs e)
-        {
-            var color = ChooseColor(Settings.Background.GradientStart.Color);
-            if (color.HasValue)
-            {
-                Settings.Background.GradientStart.Color = color.Value;
-                UpdateColorRectangle(GradientStartRect, Settings.Background.GradientStart);
-            }
-        }
-
-        private void ChangeGradientEnd_Click(object sender, RoutedEventArgs e)
-        {
-            var color = ChooseColor(Settings.Background.GradientEnd.Color);
-            if (color.HasValue)
-            {
-                Settings.Background.GradientEnd.Color = color.Value;
-                UpdateColorRectangle(GradientEndRect, Settings.Background.GradientEnd);
-            }
-        }
-
         private void ChangeShadowColor_Click(object sender, RoutedEventArgs e)
         {
             var color = ChooseColor(Settings.DropShadow.ShadowColor.Color);
@@ -805,6 +774,50 @@ namespace OCRTrainingImageGenerator.Controls
         }
 
         #endregion
+
+        #region Background Events
+
+        private void AddBackground_Click(object sender, RoutedEventArgs e)
+        {
+            var newBackground = new BackgroundSetting
+            {
+                Name = $"Background {Backgrounds.Count + 1}",
+                Type = BackgroundType.SolidColor,
+                SolidColor = new ColorSetting { R = 255, G = 255, B = 255, A = 255 }
+            };
+            Backgrounds.Add(new BackgroundDisplay(newBackground));
+        }
+
+        private void RemoveBackground_Click(object sender, RoutedEventArgs e)
+        {
+            if (BackgroundsList.SelectedItem is BackgroundDisplay selected && Backgrounds.Count > 1)
+            {
+                Backgrounds.Remove(selected);
+            }
+        }
+
+        private void EditBackground_Click(object sender, RoutedEventArgs e)
+        {
+            if (BackgroundsList.SelectedItem is BackgroundDisplay selected)
+            {
+                var dialog = new BackgroundEditDialog(selected.BackgroundSetting);
+                if (dialog.ShowDialog() == true)
+                {
+                    // Refresh the display
+                    var index = Backgrounds.IndexOf(selected);
+                    Backgrounds[index] = new BackgroundDisplay(selected.BackgroundSetting);
+
+                    // Trigger auto preview if enabled
+                    if (_isAutoPreviewEnabled)
+                    {
+                        _autoPreviewTimer.Stop();
+                        _autoPreviewTimer.Start();
+                    }
+                }
+            }
+        }
+
+        #endregion
     }
 
     public class ColorDisplay
@@ -815,6 +828,19 @@ namespace OCRTrainingImageGenerator.Controls
         public ColorDisplay(ColorSetting colorSetting)
         {
             ColorSetting = colorSetting;
+        }
+
+        public override string ToString() => DisplayText;
+    }
+
+    public class BackgroundDisplay
+    {
+        public BackgroundSetting BackgroundSetting { get; }
+        public string DisplayText => $"{BackgroundSetting.Name} ({BackgroundSetting.Type})";
+
+        public BackgroundDisplay(BackgroundSetting backgroundSetting)
+        {
+            BackgroundSetting = backgroundSetting;
         }
 
         public override string ToString() => DisplayText;

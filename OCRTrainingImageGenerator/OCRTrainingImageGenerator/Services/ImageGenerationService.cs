@@ -35,17 +35,32 @@ namespace OCRTrainingImageGenerator.Services
                 localRandom = new Random(_random.Next());
             }
 
-            // Create initial bitmap
-            var initialHeight = (int)settings.InitialHeight.GetRandomValue(localRandom);
-            var estimatedWidth = EstimateTextWidth(text, fontPath, settings, localRandom);
-
+            // UPDATED: Create initial bitmap with proper text measurement
+            var fontSize = (float)settings.FontSize.GetRandomValue(localRandom);
             var marginLeft = (int)settings.Margins.Left.GetRandomValue(localRandom);
             var marginRight = (int)settings.Margins.Right.GetRandomValue(localRandom);
             var marginTop = (int)settings.Margins.Top.GetRandomValue(localRandom);
             var marginBottom = (int)settings.Margins.Bottom.GetRandomValue(localRandom);
 
-            var totalWidth = estimatedWidth + marginLeft + marginRight;
-            var totalHeight = initialHeight + marginTop + marginBottom;
+            // UPDATED: Measure text properly before creating bitmap
+            System.Drawing.Size textSize;
+            Font font = null;
+
+            try
+            {
+                font = LoadFont(fontPath, fontSize);
+                textSize = MeasureText(text, font);
+            }
+            catch
+            {
+                font = new Font(FontFamily.GenericSansSerif, fontSize, FontStyle.Regular);
+                textSize = MeasureText(text, font);
+            }
+
+            // UPDATED: Calculate total dimensions based on actual text size
+            var totalWidth = textSize.Width + marginLeft + marginRight;
+            var totalHeight = Math.Max((int)settings.InitialHeight.GetRandomValue(localRandom),
+                                     textSize.Height + marginTop + marginBottom);
 
             using (var bitmap = new Bitmap(totalWidth, totalHeight))
             using (var graphics = Graphics.FromImage(bitmap))
@@ -55,12 +70,13 @@ namespace OCRTrainingImageGenerator.Services
                 graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
-                // Draw background
+                // UPDATED: Draw background using multiple background support
                 DrawBackground(graphics, bitmap.Size, settings, localRandom);
 
-                // Draw text
-                DrawText(graphics, text, fontPath, settings, localRandom,
-                    new Rectangle(marginLeft, marginTop, estimatedWidth, initialHeight - marginTop - marginBottom));
+                // UPDATED: Draw text with proper vertical centering
+                DrawText(graphics, text, font, settings, localRandom,
+                    new Rectangle(marginLeft, marginTop, textSize.Width, totalHeight - marginTop - marginBottom),
+                    textSize);
 
                 // Convert to OpenCV Mat
                 var mat = bitmap.ToMat();
@@ -228,32 +244,87 @@ namespace OCRTrainingImageGenerator.Services
             }
         }
 
-        private int EstimateTextWidth(string text, string fontPath, OCRGenerationSettings settings, Random random)
+        // UPDATED: New method to load fonts properly
+        private Font LoadFont(string fontPath, float fontSize)
         {
-            // Simple estimation - in a real implementation you'd measure the actual text
-            var fontSize = (int)settings.FontSize.GetRandomValue(random);
-            return (int)(text.Length * fontSize * 0.6f); // Rough estimation
+            try
+            {
+                var fontCollection = new PrivateFontCollection();
+                fontCollection.AddFontFile(fontPath);
+                return new Font(fontCollection.Families[0], fontSize, FontStyle.Regular);
+            }
+            catch
+            {
+                // Fallback to system font
+                return new Font(FontFamily.GenericSansSerif, fontSize, FontStyle.Regular);
+            }
         }
 
+        // UPDATED: New method to measure text accurately
+        private System.Drawing.Size MeasureText(string text, Font font)
+        {
+            using (var tempBitmap = new Bitmap(1, 1))
+            using (var tempGraphics = Graphics.FromImage(tempBitmap))
+            {
+                tempGraphics.TextRenderingHint = TextRenderingHint.AntiAlias;
+
+                // Use MeasureString with StringFormat for more accurate measurement
+                var format = new StringFormat(StringFormat.GenericDefault)
+                {
+                    FormatFlags = StringFormatFlags.MeasureTrailingSpaces
+                };
+
+                var measured = tempGraphics.MeasureString(text, font, int.MaxValue, format);
+
+                // Add some padding to ensure text isn't clipped
+                return new System.Drawing.Size(
+                    (int)Math.Ceiling(measured.Width) + 4,
+                    (int)Math.Ceiling(measured.Height) + 2
+                );
+            }
+        }
+
+        // UPDATED: Updated to support multiple backgrounds
         private void DrawBackground(Graphics graphics, System.Drawing.Size size, OCRGenerationSettings settings, Random random)
         {
-            switch (settings.Background.Type)
+            // Use random background if multiple are available
+            BackgroundSetting background;
+            if (settings.Backgrounds.Count > 0)
+            {
+                background = settings.Backgrounds[random.Next(settings.Backgrounds.Count)];
+            }
+            else
+            {
+                // Fallback to default white background
+                background = new BackgroundSetting();
+            }
+
+            switch (background.Type)
             {
                 case BackgroundType.SolidColor:
-                    using (var brush = new SolidBrush(ColorFromSetting(settings.Background.SolidColor)))
+                    using (var brush = new SolidBrush(ColorFromSetting(background.SolidColor)))
                     {
                         graphics.FillRectangle(brush, 0, 0, size.Width, size.Height);
                     }
                     break;
 
                 case BackgroundType.LinearGradient:
+                    // Calculate gradient endpoints based on angle
+                    var angleRad = background.GradientAngle * Math.PI / 180.0;
+                    var centerX = size.Width / 2.0f;
+                    var centerY = size.Height / 2.0f;
+                    var length = Math.Max(size.Width, size.Height);
+
+                    var startX = centerX - (float)(Math.Cos(angleRad) * length / 2);
+                    var startY = centerY - (float)(Math.Sin(angleRad) * length / 2);
+                    var endX = centerX + (float)(Math.Cos(angleRad) * length / 2);
+                    var endY = centerY + (float)(Math.Sin(angleRad) * length / 2);
+
                     using (var brush = new LinearGradientBrush(
-                        new System.Drawing.Point(0, 0),
-                        new System.Drawing.Point(
-                            (int)(Math.Cos(settings.Background.GradientAngle * Math.PI / 180) * size.Width),
-                            (int)(Math.Sin(settings.Background.GradientAngle * Math.PI / 180) * size.Height)),
-                        ColorFromSetting(settings.Background.GradientStart),
-                        ColorFromSetting(settings.Background.GradientEnd)))
+                        new PointF(startX, startY),
+                        new PointF(endX, endY),
+                        ColorFromSetting(background.GradientStart),
+                        ColorFromSetting(background.GradientEnd)))
                     {
                         graphics.FillRectangle(brush, 0, 0, size.Width, size.Height);
                     }
@@ -261,90 +332,73 @@ namespace OCRTrainingImageGenerator.Services
             }
         }
 
-        private void DrawText(Graphics graphics, string text, string fontPath, OCRGenerationSettings settings,
-            Random random, Rectangle bounds)
+        // UPDATED: Improved text drawing with proper vertical centering
+        private void DrawText(Graphics graphics, string text, Font font, OCRGenerationSettings settings,
+            Random random, Rectangle bounds, System.Drawing.Size textSize)
         {
-            var fontSize = (float)settings.FontSize.GetRandomValue(random);
+            // Get random foreground color
+            var colorSetting = settings.ForegroundColors.Any()
+                ? settings.ForegroundColors[random.Next(settings.ForegroundColors.Count)]
+                : new ColorSetting { R = 0, G = 0, B = 0, A = 255 };
 
-            // Load font
-            Font font;
-            try
+            using (var brush = new SolidBrush(ColorFromSetting(colorSetting)))
             {
-                var fontCollection = new PrivateFontCollection();
-                fontCollection.AddFontFile(fontPath);
-                font = new Font(fontCollection.Families[0], fontSize, FontStyle.Regular);
-            }
-            catch
-            {
-                // Fallback to system font
-                font = new Font(FontFamily.GenericSansSerif, fontSize, FontStyle.Regular);
-            }
+                // UPDATED: Calculate precise positioning for proper alignment
+                float x = bounds.X;
+                float y = bounds.Y;
 
-            using (font)
-            {
-                // Get random foreground color
-                var colorSetting = settings.ForegroundColors.Any()
-                    ? settings.ForegroundColors[random.Next(settings.ForegroundColors.Count)]
-                    : new ColorSetting { R = 0, G = 0, B = 0, A = 255 };
-
-                using (var brush = new SolidBrush(ColorFromSetting(colorSetting)))
+                // Horizontal alignment
+                switch (settings.HorizontalAlignment)
                 {
-                    // Setup string format
-                    var format = new StringFormat();
-
-                    switch (settings.HorizontalAlignment)
-                    {
-                        case TextAlignment.Left:
-                            format.Alignment = StringAlignment.Near;
-                            break;
-                        case TextAlignment.Center:
-                            format.Alignment = StringAlignment.Center;
-                            break;
-                        case TextAlignment.Right:
-                            format.Alignment = StringAlignment.Far;
-                            break;
-                    }
-
-                    switch (settings.VerticalAlignment)
-                    {
-                        case VerticalAlignment.Top:
-                            format.LineAlignment = StringAlignment.Near;
-                            break;
-                        case VerticalAlignment.Center:
-                            format.LineAlignment = StringAlignment.Center;
-                            break;
-                        case VerticalAlignment.Bottom:
-                            format.LineAlignment = StringAlignment.Far;
-                            break;
-                    }
-
-                    // Apply character and line spacing
-                    // Note: GDI+ doesn't have direct character spacing, this is a simplified implementation
-
-                    // Draw drop shadow if enabled
-                    if (settings.DropShadow.Enabled)
-                    {
-                        var shadowOffsetX = (float)settings.DropShadow.OffsetX.GetRandomValue(random);
-                        var shadowOffsetY = (float)settings.DropShadow.OffsetY.GetRandomValue(random);
-                        var shadowOpacity = (float)settings.DropShadow.Opacity.GetRandomValue(random);
-
-                        var shadowColor = ColorFromSetting(settings.DropShadow.ShadowColor);
-                        shadowColor = Color.FromArgb((int)(255 * shadowOpacity), shadowColor.R, shadowColor.G, shadowColor.B);
-
-                        using (var shadowBrush = new SolidBrush(shadowColor))
-                        {
-                            var shadowBounds = new RectangleF(
-                                bounds.X + shadowOffsetX,
-                                bounds.Y + shadowOffsetY,
-                                bounds.Width,
-                                bounds.Height);
-                            graphics.DrawString(text, font, shadowBrush, shadowBounds, format);
-                        }
-                    }
-
-                    // Draw main text
-                    graphics.DrawString(text, font, brush, bounds, format);
+                    case TextAlignment.Left:
+                        x = bounds.X;
+                        break;
+                    case TextAlignment.Center:
+                        x = bounds.X + (bounds.Width - textSize.Width) / 2.0f;
+                        break;
+                    case TextAlignment.Right:
+                        x = bounds.X + bounds.Width - textSize.Width;
+                        break;
                 }
+
+                // UPDATED: Improved vertical alignment with font metrics
+                switch (settings.VerticalAlignment)
+                {
+                    case VerticalAlignment.Top:
+                        y = bounds.Y;
+                        break;
+                    case VerticalAlignment.Center:
+                        // Use font metrics for proper centering
+                        var fontHeight = font.GetHeight(graphics);
+                        var ascent = fontHeight * font.FontFamily.GetCellAscent(font.Style) / font.FontFamily.GetEmHeight(font.Style);
+                        var descent = fontHeight * font.FontFamily.GetCellDescent(font.Style) / font.FontFamily.GetEmHeight(font.Style);
+                        var textHeightActual = ascent + descent;
+
+                        y = bounds.Y + (bounds.Height - textHeightActual) / 2.0f + ascent - fontHeight;
+                        break;
+                    case VerticalAlignment.Bottom:
+                        y = bounds.Y + bounds.Height - textSize.Height;
+                        break;
+                }
+
+                // Draw drop shadow if enabled
+                if (settings.DropShadow.Enabled)
+                {
+                    var shadowOffsetX = (float)settings.DropShadow.OffsetX.GetRandomValue(random);
+                    var shadowOffsetY = (float)settings.DropShadow.OffsetY.GetRandomValue(random);
+                    var shadowOpacity = (float)settings.DropShadow.Opacity.GetRandomValue(random);
+
+                    var shadowColor = ColorFromSetting(settings.DropShadow.ShadowColor);
+                    shadowColor = Color.FromArgb((int)(255 * shadowOpacity), shadowColor.R, shadowColor.G, shadowColor.B);
+
+                    using (var shadowBrush = new SolidBrush(shadowColor))
+                    {
+                        graphics.DrawString(text, font, shadowBrush, x + shadowOffsetX, y + shadowOffsetY);
+                    }
+                }
+
+                // Draw main text at calculated position
+                graphics.DrawString(text, font, brush, x, y);
             }
         }
 
