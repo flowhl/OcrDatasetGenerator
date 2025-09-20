@@ -21,7 +21,6 @@ namespace OCRTrainingImageGenerator.Models
 
         // Colors
         public List<ColorSetting> ForegroundColors { get; set; } = new List<ColorSetting>();
-        // UPDATED: Changed from single BackgroundSetting to list of BackgroundSetting
         public List<BackgroundSetting> Backgrounds { get; set; } = new List<BackgroundSetting>();
 
         // Image Dimensions & Margins
@@ -46,7 +45,7 @@ namespace OCRTrainingImageGenerator.Models
         // Effects
         public DropShadowSettings DropShadow { get; set; } = new DropShadowSettings();
 
-        // UPDATED: Legacy property for backward compatibility
+        // Legacy property for backward compatibility
         [XmlIgnore]
         public BackgroundSetting Background
         {
@@ -104,8 +103,6 @@ namespace OCRTrainingImageGenerator.Models
         public ColorSetting GradientStart { get; set; } = new ColorSetting { R = 255, G = 255, B = 255 };
         public ColorSetting GradientEnd { get; set; } = new ColorSetting { R = 240, G = 240, B = 240 };
         public double GradientAngle { get; set; } = 0;
-
-        // UPDATED: Added name for display purposes
         public string Name { get; set; } = "Background";
     }
 
@@ -147,5 +144,96 @@ namespace OCRTrainingImageGenerator.Models
         Top,
         Center,
         Bottom
+    }
+
+    // New model for batch generation
+    public class BatchGenerationJob : INotifyPropertyChanged
+    {
+        private string _settingsFilePath = "";
+        private int _imageCount = 1000;
+        private string _subfolderName = "";
+        private JobStatus _status = JobStatus.Pending;
+        private string _statusMessage = "";
+        private int _progress = 0;
+
+        public string SettingsFilePath
+        {
+            get => _settingsFilePath;
+            set { _settingsFilePath = value; OnPropertyChanged(); UpdateSubfolderName(); }
+        }
+
+        public int ImageCount
+        {
+            get => _imageCount;
+            set { _imageCount = value; OnPropertyChanged(); }
+        }
+
+        public string SubfolderName
+        {
+            get => _subfolderName;
+            set { _subfolderName = value; OnPropertyChanged(); }
+        }
+
+        public JobStatus Status
+        {
+            get => _status;
+            set { _status = value; OnPropertyChanged(); }
+        }
+
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set { _statusMessage = value; OnPropertyChanged(); }
+        }
+
+        public int Progress
+        {
+            get => _progress;
+            set { _progress = value; OnPropertyChanged(); }
+        }
+
+        private void UpdateSubfolderName()
+        {
+            if (!string.IsNullOrEmpty(SettingsFilePath))
+            {
+                SubfolderName = System.IO.Path.GetFileNameWithoutExtension(SettingsFilePath);
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    public enum JobStatus
+    {
+        Pending,
+        Running,
+        Completed,
+        Failed,
+        Cancelled
+    }
+
+    // Model for saving/loading batch configuration
+    [Serializable]
+    public class BatchConfiguration
+    {
+        public string OutputFolder { get; set; } = "";
+        public int MaxThreads { get; set; } = 4;
+        public List<BatchJobInfo> Jobs { get; set; } = new List<BatchJobInfo>();
+        public DateTime LastRunDate { get; set; } = DateTime.Now;
+    }
+
+    [Serializable]
+    public class BatchJobInfo
+    {
+        public string SettingsFilePath { get; set; } = "";
+        public int ImageCount { get; set; } = 1000;
+        public string SubfolderName { get; set; } = "";
+        public JobStatus LastStatus { get; set; } = JobStatus.Pending;
+        public string LastStatusMessage { get; set; } = "";
     }
 }

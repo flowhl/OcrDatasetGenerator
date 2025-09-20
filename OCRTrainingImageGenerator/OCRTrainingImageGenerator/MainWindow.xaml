@@ -11,6 +11,9 @@
             <TabItem Header="Settings Editor">
                 <controls:OCRSettingsEditor/>
             </TabItem>
+            <TabItem Header="Batch Generator">
+                <controls:BatchGenerator/>
+            </TabItem>
         </TabControl>
 
     </Grid>

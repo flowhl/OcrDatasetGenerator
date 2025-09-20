@@ -1,0 +1,144 @@
+﻿<UserControl x:Class="OCRTrainingImageGenerator.Controls.BatchGenerator"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:OCRTrainingImageGenerator.Controls"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <Style x:Key="GroupBoxStyle" TargetType="GroupBox">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
+        <Style x:Key="LabelStyle" TargetType="Label">
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Width" Value="120"/>
+        </Style>
+
+        <Style x:Key="TextBoxStyle" TargetType="TextBox">
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+
+        <Style x:Key="ButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="10,2"/>
+        </Style>
+
+        <DataTemplate x:Key="JobTemplate">
+            <Border BorderBrush="Gray" BorderThickness="1" Margin="2" Padding="5" Background="White">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Settings file and subfolder -->
+                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+                        <TextBlock Text="Settings: " FontWeight="Bold" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding SettingsFilePath}" VerticalAlignment="Center" Margin="5,0"/>
+                        <TextBlock Text=" → " VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding SubfolderName}" FontStyle="Italic" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Remove button -->
+                    <Button Grid.Row="0" Grid.Column="1" Content="Remove" Width="60" Height="20" 
+                            Click="RemoveJob_Click" Tag="{Binding}" FontSize="10"/>
+
+                    <!-- Image count and status -->
+                    <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,2,0,0">
+                        <TextBlock Text="Images: " FontWeight="Bold" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding ImageCount, UpdateSourceTrigger=PropertyChanged}" Width="80" Height="20" 
+                                 VerticalAlignment="Center" Margin="2,0"/>
+                        <TextBlock Text="{Binding StatusMessage}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Progress bar -->
+                    <ProgressBar Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Height="4" Margin="0,2,0,0"
+                                 Value="{Binding Progress}" Maximum="100" Visibility="{Binding Status, Converter={x:Static local:BatchGenerator.StatusToProgressVisibilityConverter}}"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Output Folder Selection -->
+        <GroupBox Grid.Row="0" Header="Output Settings" Style="{StaticResource GroupBoxStyle}">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <Label Content="Output Folder:" Style="{StaticResource LabelStyle}"/>
+                    <TextBox Name="OutputFolderTextBox" Style="{StaticResource TextBoxStyle}" Width="400"/>
+                    <Button Content="Browse..." Style="{StaticResource ButtonStyle}" Click="BrowseOutputFolder_Click"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5">
+                    <Label Content="Max Threads:" Style="{StaticResource LabelStyle}"/>
+                    <TextBox Name="MaxThreadsTextBox" Style="{StaticResource TextBoxStyle}" Width="60" Text="4"/>
+                    <Label Content="(CPU cores available)" FontStyle="Italic" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Jobs List -->
+        <GroupBox Grid.Row="1" Header="Generation Jobs" Style="{StaticResource GroupBoxStyle}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Add Job Controls -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                    <Button Content="Add Settings File" Style="{StaticResource ButtonStyle}" Click="AddJob_Click"/>
+                    <Button Content="Clear All" Style="{StaticResource ButtonStyle}" Click="ClearJobs_Click" Margin="10,0,0,0"/>
+                    <Button Content="Save Config" Style="{StaticResource ButtonStyle}" Click="SaveConfig_Click" Margin="10,0,0,0"/>
+                    <Button Content="Load Config" Style="{StaticResource ButtonStyle}" Click="LoadConfig_Click" Margin="5,0,0,0"/>
+                </StackPanel>
+
+                <!-- Jobs List -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl Name="JobsItemsControl" ItemTemplate="{StaticResource JobTemplate}"/>
+                </ScrollViewer>
+            </Grid>
+        </GroupBox>
+
+        <!-- Generation Controls -->
+        <GroupBox Grid.Row="2" Header="Generation" Style="{StaticResource GroupBoxStyle}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Status Display -->
+                <StackPanel Grid.Column="0" Orientation="Vertical">
+                    <TextBlock Name="OverallStatusTextBlock" Text="Ready to generate" FontWeight="Bold"/>
+                    <TextBlock Name="OverallProgressTextBlock" Text="" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- Generate Button -->
+                <Button Grid.Column="1" Name="GenerateButton" Content="Start Generation" 
+                        Style="{StaticResource ButtonStyle}" Width="120" Height="35" 
+                        Click="StartGeneration_Click" FontWeight="Bold"/>
+            </Grid>
+        </GroupBox>
+    </Grid>
+</UserControl>

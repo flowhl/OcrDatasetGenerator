@@ -35,14 +35,14 @@ namespace OCRTrainingImageGenerator.Services
                 localRandom = new Random(_random.Next());
             }
 
-            // UPDATED: Create initial bitmap with proper text measurement
+            // Create initial bitmap with proper text measurement
             var fontSize = (float)settings.FontSize.GetRandomValue(localRandom);
             var marginLeft = (int)settings.Margins.Left.GetRandomValue(localRandom);
             var marginRight = (int)settings.Margins.Right.GetRandomValue(localRandom);
             var marginTop = (int)settings.Margins.Top.GetRandomValue(localRandom);
             var marginBottom = (int)settings.Margins.Bottom.GetRandomValue(localRandom);
 
-            // UPDATED: Measure text properly before creating bitmap
+            // Measure text properly before creating bitmap
             System.Drawing.Size textSize;
             Font font = null;
 
@@ -57,7 +57,7 @@ namespace OCRTrainingImageGenerator.Services
                 textSize = MeasureText(text, font);
             }
 
-            // UPDATED: Calculate total dimensions based on actual text size
+            // Calculate total dimensions based on actual text size
             var totalWidth = textSize.Width + marginLeft + marginRight;
             var totalHeight = Math.Max((int)settings.InitialHeight.GetRandomValue(localRandom),
                                      textSize.Height + marginTop + marginBottom);
@@ -70,10 +70,10 @@ namespace OCRTrainingImageGenerator.Services
                 graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
-                // UPDATED: Draw background using multiple background support
+                // Draw background using multiple background support
                 DrawBackground(graphics, bitmap.Size, settings, localRandom);
 
-                // UPDATED: Draw text with proper vertical centering
+                // Draw text with proper vertical centering
                 DrawText(graphics, text, font, settings, localRandom,
                     new Rectangle(marginLeft, marginTop, textSize.Width, totalHeight - marginTop - marginBottom),
                     textSize);
@@ -89,7 +89,7 @@ namespace OCRTrainingImageGenerator.Services
         }
 
         /// <summary>
-        /// Generates multiple OCR training images with multithreading
+        /// Generates multiple OCR training images with multithreading and sequential naming
         /// </summary>
         /// <param name="settings">Generation settings</param>
         /// <param name="outputPath">Path where to save images and labels</param>
@@ -114,17 +114,15 @@ namespace OCRTrainingImageGenerator.Services
             if (!fonts.Any())
                 throw new InvalidOperationException("No fonts found in folder");
 
-            // Create labels directory
-            var labelsPath = Path.Combine(outputPath, "labels");
-            if (!Directory.Exists(labelsPath))
-                Directory.CreateDirectory(labelsPath);
-
             // Progress tracking
             var completed = 0;
             var failed = 0;
             var startTime = DateTime.Now;
 
-            // Thread-safe collections
+            // Thread-safe collections for image generation results
+            var imageResults = new ConcurrentDictionary<int, ImageResult>();
+
+            // Thread-safe collections for strings and fonts
             var stringQueue = new ConcurrentQueue<string>(strings);
             var fontQueue = new ConcurrentQueue<string>(fonts);
 
@@ -150,17 +148,16 @@ namespace OCRTrainingImageGenerator.Services
                             // Generate image
                             using (var mat = GenerateImage(settings, text, fontPath))
                             {
-                                // Save image
-                                var imageName = $"image_{imageIndex:D6}.jpg";
-                                var imagePath = Path.Combine(outputPath, imageName);
-
                                 // Apply JPG quality settings
                                 var quality = (int)settings.JpgQuality.GetRandomValue();
-                                SaveImage(mat, imagePath, quality);
 
-                                // Save label
-                                var labelPath = Path.Combine(labelsPath, $"image_{imageIndex:D6}.txt");
-                                File.WriteAllText(labelPath, text);
+                                // Store result for sequential saving
+                                imageResults[imageIndex] = new ImageResult
+                                {
+                                    ImageData = mat.Clone(),
+                                    Text = text,
+                                    Quality = quality
+                                };
                             }
 
                             // Update progress
@@ -194,9 +191,68 @@ namespace OCRTrainingImageGenerator.Services
                 Task.WaitAll(tasks.ToArray());
             }
 
+            // Save images sequentially with proper numbering
+            progressCallback?.Invoke("Saving images and creating labels...");
+            SaveImagesAndLabels(imageResults, outputPath, imageCount);
+
+            // Cleanup
+            foreach (var result in imageResults.Values)
+            {
+                result.ImageData?.Dispose();
+            }
+
             var totalTime = DateTime.Now - startTime;
             progressCallback?.Invoke($"Generation complete! {completed}/{imageCount} images generated " +
                 $"in {totalTime:hh\\:mm\\:ss} ({failed} failed)");
+        }
+
+        private void SaveImagesAndLabels(ConcurrentDictionary<int, ImageResult> imageResults,
+            string outputPath, int imageCount)
+        {
+            var labelsPath = Path.Combine(outputPath, "labels.txt");
+            var labelLines = new List<string>();
+
+            // Process images in sequential order
+            for (int i = 0; i < imageCount; i++)
+            {
+                if (imageResults.TryGetValue(i, out var result))
+                {
+                    try
+                    {
+                        // Save image with sequential naming: 0.jpg, 1.jpg, 2.jpg, etc.
+                        var imageName = $"{i}.jpg";
+                        var imagePath = Path.Combine(outputPath, imageName);
+
+                        SaveImage(result.ImageData, imagePath, result.Quality);
+
+                        // Add to labels list
+                        labelLines.Add($"{imageName} {result.Text}");
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error but continue with other images
+                        System.Diagnostics.Debug.WriteLine($"Failed to save image {i}: {ex.Message}");
+
+                        // Still add entry to labels to maintain consistency
+                        labelLines.Add($"{i}.jpg [ERROR: Failed to save]");
+                    }
+                }
+                else
+                {
+                    // Image generation failed, but we still need to maintain sequential numbering
+                    labelLines.Add($"{i}.jpg [ERROR: Generation failed]");
+                }
+            }
+
+            // Write labels.txt file
+            try
+            {
+                File.WriteAllLines(labelsPath, labelLines);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to write labels.txt: {ex.Message}", ex);
+            }
         }
 
         #region Private Helper Methods
@@ -244,7 +300,6 @@ namespace OCRTrainingImageGenerator.Services
             }
         }
 
-        // UPDATED: New method to load fonts properly
         private Font LoadFont(string fontPath, float fontSize)
         {
             try
@@ -260,7 +315,6 @@ namespace OCRTrainingImageGenerator.Services
             }
         }
 
-        // UPDATED: New method to measure text accurately
         private System.Drawing.Size MeasureText(string text, Font font)
         {
             using (var tempBitmap = new Bitmap(1, 1))
@@ -284,7 +338,6 @@ namespace OCRTrainingImageGenerator.Services
             }
         }
 
-        // UPDATED: Updated to support multiple backgrounds
         private void DrawBackground(Graphics graphics, System.Drawing.Size size, OCRGenerationSettings settings, Random random)
         {
             // Use random background if multiple are available
@@ -332,7 +385,6 @@ namespace OCRTrainingImageGenerator.Services
             }
         }
 
-        // UPDATED: Improved text drawing with proper vertical centering
         private void DrawText(Graphics graphics, string text, Font font, OCRGenerationSettings settings,
             Random random, Rectangle bounds, System.Drawing.Size textSize)
         {
@@ -343,7 +395,7 @@ namespace OCRTrainingImageGenerator.Services
 
             using (var brush = new SolidBrush(ColorFromSetting(colorSetting)))
             {
-                // UPDATED: Calculate precise positioning for proper alignment
+                // Calculate precise positioning for proper alignment
                 float x = bounds.X;
                 float y = bounds.Y;
 
@@ -361,7 +413,7 @@ namespace OCRTrainingImageGenerator.Services
                         break;
                 }
 
-                // UPDATED: Improved vertical alignment with font metrics
+                // Improved vertical alignment with font metrics
                 switch (settings.VerticalAlignment)
                 {
                     case VerticalAlignment.Top:
@@ -579,6 +631,17 @@ namespace OCRTrainingImageGenerator.Services
         private Color ColorFromSetting(ColorSetting colorSetting)
         {
             return Color.FromArgb(colorSetting.A, colorSetting.R, colorSetting.G, colorSetting.B);
+        }
+
+        #endregion
+
+        #region Helper Classes
+
+        private class ImageResult
+        {
+            public Mat ImageData { get; set; }
+            public string Text { get; set; }
+            public int Quality { get; set; }
         }
 
         #endregion
