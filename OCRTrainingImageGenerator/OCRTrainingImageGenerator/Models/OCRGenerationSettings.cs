@@ -13,6 +13,7 @@ namespace OCRTrainingImageGenerator.Models
 
         // Fonts
         public string FontFolderPath { get; set; } = "";
+        public List<FontSetting> EnabledFonts { get; set; } = new List<FontSetting>();
         public RangeOrFixed FontSize { get; set; } = new RangeOrFixed { Fixed = 24 };
         public TextAlignment HorizontalAlignment { get; set; } = TextAlignment.Left;
         public VerticalAlignment VerticalAlignment { get; set; } = VerticalAlignment.Center;
@@ -58,6 +59,14 @@ namespace OCRTrainingImageGenerator.Models
                     Backgrounds[0] = value;
             }
         }
+    }
+
+    [Serializable]
+    public class FontSetting
+    {
+        public string FilePath { get; set; } = "";
+        public string FileName { get; set; } = "";
+        public bool IsEnabled { get; set; } = true;
     }
 
     [Serializable]
@@ -146,7 +155,54 @@ namespace OCRTrainingImageGenerator.Models
         Bottom
     }
 
-    // New model for batch generation
+    // Font selection models
+    public class FontSelectionItem : INotifyPropertyChanged
+    {
+        private bool _isEnabled = true;
+        private string _filePath = "";
+        private string _fileName = "";
+        private string _fontFamilyName = "";
+        private System.Windows.Media.Imaging.BitmapSource _previewImage;
+
+        public string FilePath
+        {
+            get => _filePath;
+            set { _filePath = value; OnPropertyChanged(); }
+        }
+
+        public string FileName
+        {
+            get => _fileName;
+            set { _fileName = value; OnPropertyChanged(); }
+        }
+
+        public string FontFamilyName
+        {
+            get => _fontFamilyName;
+            set { _fontFamilyName = value; OnPropertyChanged(); }
+        }
+
+        public System.Windows.Media.Imaging.BitmapSource PreviewImage
+        {
+            get => _previewImage;
+            set { _previewImage = value; OnPropertyChanged(); }
+        }
+
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            set { _isEnabled = value; OnPropertyChanged(); }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    // Batch generation models
     public class BatchGenerationJob : INotifyPropertyChanged
     {
         private string _settingsFilePath = "";

@@ -5,6 +5,9 @@
     <Compile Update="Controls\BatchGenerator.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Controls\FontSelector.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Controls\OCRSettingsEditor.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

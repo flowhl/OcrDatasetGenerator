@@ -106,7 +106,7 @@ namespace OCRTrainingImageGenerator.Services
             // Load strings and fonts
             progressCallback?.Invoke("Loading strings and fonts...");
             var strings = LoadStrings(settings.StringsFilePath);
-            var fonts = LoadFonts(settings.FontFolderPath);
+            var fonts = LoadFonts(settings.FontFolderPath, settings.EnabledFonts);
 
             if (!strings.Any())
                 throw new InvalidOperationException("No strings loaded from file");
@@ -267,8 +267,17 @@ namespace OCRTrainingImageGenerator.Services
                 .ToList();
         }
 
-        private List<string> LoadFonts(string folderPath)
+        private List<string> LoadFonts(string folderPath, List<FontSetting> enabledFonts = null)
         {
+            // If we have enabled fonts list, use only those
+            if (enabledFonts != null && enabledFonts.Any())
+            {
+                return enabledFonts.Where(f => f.IsEnabled && File.Exists(f.FilePath))
+                                  .Select(f => f.FilePath)
+                                  .ToList();
+            }
+
+            // Fallback to loading all fonts from folder (backward compatibility)
             if (!Directory.Exists(folderPath))
                 return new List<string>();
 

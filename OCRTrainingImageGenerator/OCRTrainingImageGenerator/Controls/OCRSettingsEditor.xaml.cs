@@ -125,21 +125,17 @@ namespace OCRTrainingImageGenerator.Controls
                 }
             }
 
-            // Load system fonts as fallback
+            // Load enabled fonts for preview
             _previewFonts = new List<string>();
             try
             {
-                // Try to get fonts from settings folder first
-                if (!string.IsNullOrEmpty(Settings?.FontFolderPath) && Directory.Exists(Settings.FontFolderPath))
+                var enabledFonts = FontSelectorControl.GetEnabledFonts();
+                if (enabledFonts.Any())
                 {
-                    var extensions = new[] { ".ttf", ".otf" };
-                    _previewFonts = Directory.GetFiles(Settings.FontFolderPath, "*.*", SearchOption.AllDirectories)
-                        .Where(file => extensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
-                        .Take(10) // Limit for preview performance
-                        .ToList();
+                    _previewFonts = enabledFonts.Select(f => f.FilePath).Take(10).ToList();
                 }
 
-                // Fallback to system fonts if no custom fonts
+                // Fallback to system fonts if no enabled custom fonts
                 if (!_previewFonts.Any())
                 {
                     var systemFonts = System.Windows.Media.Fonts.SystemFontFamilies
@@ -310,6 +306,14 @@ namespace OCRTrainingImageGenerator.Controls
 
             // Fonts
             FontFolderPathBox.Text = Settings.FontFolderPath;
+
+            // Set font folder and load enabled fonts
+            if (!string.IsNullOrEmpty(Settings.FontFolderPath))
+            {
+                FontSelectorControl.SetFontFolder(Settings.FontFolderPath);
+                FontSelectorControl.LoadEnabledFonts(Settings.EnabledFonts);
+            }
+
             LoadRangeOrFixedToUI(Settings.FontSize, FontSizeRangeCheck, FontSizeFixedBox, FontSizeMinBox, FontSizeMaxBox);
             LoadRangeOrFixedToUI(Settings.CharacterSpacing, CharSpacingRangeCheck, CharSpacingFixedBox, CharSpacingMinBox, CharSpacingMaxBox);
             LoadRangeOrFixedToUI(Settings.LineSpacing, LineSpacingRangeCheck, LineSpacingFixedBox, LineSpacingMinBox, LineSpacingMaxBox);
@@ -383,6 +387,8 @@ namespace OCRTrainingImageGenerator.Controls
 
             // Fonts
             Settings.FontFolderPath = FontFolderPathBox.Text;
+            Settings.EnabledFonts = FontSelectorControl.GetEnabledFonts();
+
             SaveRangeOrFixedFromUI(Settings.FontSize, FontSizeRangeCheck, FontSizeFixedBox, FontSizeMinBox, FontSizeMaxBox);
             SaveRangeOrFixedFromUI(Settings.CharacterSpacing, CharSpacingRangeCheck, CharSpacingFixedBox, CharSpacingMinBox, CharSpacingMaxBox);
             SaveRangeOrFixedFromUI(Settings.LineSpacing, LineSpacingRangeCheck, LineSpacingFixedBox, LineSpacingMinBox, LineSpacingMaxBox);
@@ -710,6 +716,8 @@ namespace OCRTrainingImageGenerator.Controls
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 FontFolderPathBox.Text = dialog.SelectedPath;
+                FontSelectorControl.SetFontFolder(dialog.SelectedPath);
+
                 // Reload preview data when font folder changes
                 LoadPreviewData();
 
