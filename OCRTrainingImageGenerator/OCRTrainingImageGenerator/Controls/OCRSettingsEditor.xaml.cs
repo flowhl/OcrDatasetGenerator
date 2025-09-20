@@ -183,6 +183,35 @@ namespace OCRTrainingImageGenerator.Controls
             }
         }
 
+        private void PreviewTextOverride_Changed(object sender, TextChangedEventArgs e)
+        {
+            // Trigger auto preview if enabled when override text changes
+            if (_isAutoPreviewEnabled && _autoPreviewTimer != null)
+            {
+                _autoPreviewTimer.Stop();
+                _autoPreviewTimer.Start();
+            }
+        }
+
+        private string GetPreviewText()
+        {
+            // Check if override text is provided
+            var overrideText = PreviewTextOverrideBox?.Text?.Trim();
+            if (!string.IsNullOrEmpty(overrideText))
+            {
+                return overrideText;
+            }
+
+            // Fall back to random strings from the list
+            if (_previewStrings.Any())
+            {
+                return _previewStrings[_previewRandom.Next(_previewStrings.Count)];
+            }
+
+            // Ultimate fallback
+            return "Sample Text";
+        }
+
         private async void GeneratePreview_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -197,12 +226,6 @@ namespace OCRTrainingImageGenerator.Controls
                 SaveUIToSettings();
 
                 // Validate basic requirements
-                if (!_previewStrings.Any())
-                {
-                    PreviewStatusLabel.Text = "No preview strings available";
-                    return;
-                }
-
                 if (!_previewFonts.Any())
                 {
                     PreviewStatusLabel.Text = "No preview fonts available";
@@ -213,12 +236,17 @@ namespace OCRTrainingImageGenerator.Controls
                 {
                     try
                     {
-                        // Get random string and font for preview
-                        var randomString = _previewStrings[_previewRandom.Next(_previewStrings.Count)];
+                        // Get preview text (either override or random)
+                        string previewText = "";
+                        Dispatcher.Invoke(() => {
+                            previewText = GetPreviewText();
+                        });
+
+                        // Get random font for preview
                         var randomFont = _previewFonts[_previewRandom.Next(_previewFonts.Count)];
 
                         // Generate preview image
-                        using (var mat = _imageService.GenerateImage(Settings, randomString, randomFont))
+                        using (var mat = _imageService.GenerateImage(Settings, previewText, randomFont))
                         {
                             // Convert to WPF BitmapSource
                             var bitmap = mat.ToBitmap();
@@ -234,7 +262,11 @@ namespace OCRTrainingImageGenerator.Controls
                                         BitmapSizeOptions.FromEmptyOptions());
 
                                     PreviewImage.Source = bitmapSource;
-                                    PreviewStatusLabel.Text = $"Preview: \"{randomString}\"";
+
+                                    // Update status to show if override text was used
+                                    var overrideText = PreviewTextOverrideBox?.Text?.Trim();
+                                    var statusPrefix = !string.IsNullOrEmpty(overrideText) ? "Override" : "Random";
+                                    PreviewStatusLabel.Text = $"{statusPrefix}: \"{previewText}\"";
                                 }
                                 finally
                                 {

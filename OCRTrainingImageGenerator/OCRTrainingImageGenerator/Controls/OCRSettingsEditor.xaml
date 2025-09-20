@@ -68,6 +68,14 @@
                         <CheckBox Name="AutoPreviewCheck" Content="Auto" VerticalAlignment="Center" Margin="10,0,0,0"/>
                     </StackPanel>
 
+                    <!-- Preview Text Override -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                        <Label Content="Override Text:" Width="80" FontSize="10"/>
+                        <TextBox Name="PreviewTextOverrideBox" Width="200" Height="20" 
+                                 ToolTip="Leave empty to use random strings from loaded file"
+                                 TextChanged="PreviewTextOverride_Changed"/>
+                    </StackPanel>
+
                     <Border Name="PreviewBorder" BorderBrush="Gray" BorderThickness="1" Background="White" 
                             Width="300" Height="100" Margin="0,5,0,0">
                         <zoomcontrol:ZoomControl>

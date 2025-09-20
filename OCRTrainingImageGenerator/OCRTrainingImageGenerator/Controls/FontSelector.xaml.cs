@@ -22,6 +22,7 @@ namespace OCRTrainingImageGenerator.Controls
     public partial class FontSelector : UserControl
     {
         public ObservableCollection<FontSelectionItem> Fonts { get; private set; }
+        private const string DefaultPreviewText = "The quick brown fox";
 
         public FontSelector()
         {
@@ -68,6 +69,42 @@ namespace OCRTrainingImageGenerator.Controls
             }
         }
 
+        private void FontPreviewText_Changed(object sender, TextChangedEventArgs e)
+        {
+            // Regenerate all previews when text changes
+            RegenerateAllPreviews();
+        }
+
+        private string GetPreviewText()
+        {
+            // Check if override text is provided
+            var overrideText = FontPreviewTextBox?.Text?.Trim();
+            if (!string.IsNullOrEmpty(overrideText))
+            {
+                return overrideText;
+            }
+
+            // Fall back to default text
+            return DefaultPreviewText;
+        }
+
+        private void RegenerateAllPreviews()
+        {
+            var previewText = GetPreviewText();
+
+            foreach (var fontItem in Fonts)
+            {
+                try
+                {
+                    fontItem.PreviewImage = GeneratePreviewImage(fontItem.FilePath, previewText);
+                }
+                catch (Exception ex)
+                {
+                    fontItem.PreviewImage = GenerateErrorPreview($"Preview failed: {ex.Message}");
+                }
+            }
+        }
+
         private void LoadFonts(string folderPath)
         {
             Fonts.Clear();
@@ -91,6 +128,8 @@ namespace OCRTrainingImageGenerator.Controls
                     return;
                 }
 
+                var previewText = GetPreviewText();
+
                 foreach (var fontFile in fontFiles.OrderBy(f => Path.GetFileName(f)))
                 {
                     var fontItem = new FontSelectionItem
@@ -104,7 +143,7 @@ namespace OCRTrainingImageGenerator.Controls
                     try
                     {
                         fontItem.FontFamilyName = GetFontFamilyName(fontFile);
-                        fontItem.PreviewImage = GeneratePreviewImage(fontFile);
+                        fontItem.PreviewImage = GeneratePreviewImage(fontFile, previewText);
                     }
                     catch (Exception ex)
                     {
@@ -145,9 +184,9 @@ namespace OCRTrainingImageGenerator.Controls
             return Path.GetFileNameWithoutExtension(fontPath);
         }
 
-        private BitmapSource GeneratePreviewImage(string fontPath)
+        private BitmapSource GeneratePreviewImage(string fontPath, string previewText = null)
         {
-            const string previewText = "The quick brown fox";
+            previewText = previewText ?? GetPreviewText();
             const float fontSize = 16f;
             const int imageWidth = 300;
             const int imageHeight = 30;

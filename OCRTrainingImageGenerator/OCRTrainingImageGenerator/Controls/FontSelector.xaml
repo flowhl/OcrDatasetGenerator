@@ -29,6 +29,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -39,15 +40,23 @@
             <Button Content="Browse..." Style="{StaticResource ButtonStyle}" Click="BrowseFontFolder_Click"/>
         </StackPanel>
 
+        <!-- Font Preview Text Override -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
+            <Label Content="Preview Text:" Style="{StaticResource LabelStyle}"/>
+            <TextBox Name="FontPreviewTextBox" Style="{StaticResource TextBoxStyle}" Width="300" 
+                     ToolTip="Leave empty to use 'The quick brown fox'" 
+                     TextChanged="FontPreviewText_Changed"/>
+        </StackPanel>
+
         <!-- Control Buttons -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5" HorizontalAlignment="Right">
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="5" HorizontalAlignment="Right">
             <Button Content="Select All" Style="{StaticResource ButtonStyle}" Click="SelectAll_Click"/>
             <Button Content="Deselect All" Style="{StaticResource ButtonStyle}" Click="DeselectAll_Click"/>
             <TextBlock Name="StatusLabel" VerticalAlignment="Center" Margin="10,0,0,0" Text="No fonts loaded" FontStyle="Italic"/>
         </StackPanel>
 
         <!-- Fonts List -->
-        <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1" Margin="5">
+        <Border Grid.Row="3" BorderBrush="Gray" BorderThickness="1" Margin="5">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <ItemsControl Name="FontsItemsControl">
                     <ItemsControl.ItemTemplate>
