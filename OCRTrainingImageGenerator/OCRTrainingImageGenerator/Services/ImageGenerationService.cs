@@ -367,6 +367,8 @@ namespace OCRTrainingImageGenerator.Services
             }
         }
 
+        // Replace the MeasureTextWithSpacing method in ImageGenerationService.cs
+
         private System.Drawing.Size MeasureTextWithSpacing(string text, Font font, float characterSpacing)
         {
             using (var tempBitmap = new Bitmap(1, 1))
@@ -394,15 +396,30 @@ namespace OCRTrainingImageGenerator.Services
                     var totalWidth = 0f;
                     var maxHeight = font.GetHeight(tempGraphics);
 
+                    // Pre-calculate natural space width
+                    var naturalSpaceWidth = tempGraphics.MeasureString("i i", font).Width -
+                                           tempGraphics.MeasureString("ii", font).Width;
+                    naturalSpaceWidth = Math.Max(naturalSpaceWidth, font.Size * 0.3f);
+
                     for (int i = 0; i < text.Length; i++)
                     {
-                        var charSize = tempGraphics.MeasureString(text[i].ToString(), font);
-                        totalWidth += charSize.Width;
+                        var charStr = text[i].ToString();
 
-                        // Add spacing between characters (but not after the last one)
-                        if (i < text.Length - 1)
+                        if (text[i] == ' ')
                         {
-                            totalWidth += characterSpacing;
+                            // For spaces, apply only 10% of the character spacing effect
+                            totalWidth += naturalSpaceWidth + (characterSpacing * 0.1f);
+                        }
+                        else
+                        {
+                            var charSize = tempGraphics.MeasureString(charStr, font);
+                            totalWidth += charSize.Width;
+
+                            // Add full spacing after non-space characters (but not after the last one)
+                            if (i < text.Length - 1)
+                            {
+                                totalWidth += characterSpacing;
+                            }
                         }
                     }
 
@@ -535,7 +552,7 @@ namespace OCRTrainingImageGenerator.Services
         }
 
         private void DrawTextWithSpacingAtPosition(Graphics graphics, string text, Font font, float characterSpacing,
-            Brush brush, float x, float y)
+    Brush brush, float x, float y)
         {
             if (Math.Abs(characterSpacing) < 0.01f)
             {
@@ -547,14 +564,36 @@ namespace OCRTrainingImageGenerator.Services
                 // Draw each character individually with spacing (positive or negative)
                 var currentX = x;
 
+                // Pre-calculate natural space width for consistent spacing
+                var naturalSpaceWidth = graphics.MeasureString("i i", font).Width -
+                                       graphics.MeasureString("ii", font).Width;
+                naturalSpaceWidth = Math.Max(naturalSpaceWidth, font.Size * 0.3f);
+
                 for (int i = 0; i < text.Length; i++)
                 {
                     var character = text[i].ToString();
-                    graphics.DrawString(character, font, brush, currentX, y);
 
-                    // Measure the character to advance position
-                    var charSize = graphics.MeasureString(character, font);
-                    currentX += charSize.Width + characterSpacing;
+                    if (text[i] == ' ')
+                    {
+                        // For spaces, apply only 10% of the character spacing effect
+                        // This keeps spaces visible even with large negative spacing
+                        currentX += naturalSpaceWidth + (characterSpacing * 0.1f);
+                    }
+                    else
+                    {
+                        // Draw non-space characters
+                        graphics.DrawString(character, font, brush, currentX, y);
+
+                        // Measure the character to advance position
+                        var charSize = graphics.MeasureString(character, font);
+                        currentX += charSize.Width;
+
+                        // Add full character spacing after non-space characters (unless it's the last character)
+                        if (i < text.Length - 1)
+                        {
+                            currentX += characterSpacing;
+                        }
+                    }
                 }
             }
         }
