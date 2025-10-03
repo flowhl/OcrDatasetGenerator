@@ -1,0 +1,228 @@
+﻿<UserControl x:Class="OCRTrainingImageGenerator.Controls.StringGenerator"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="900">
+
+    <UserControl.Resources>
+        <Style x:Key="GroupBoxStyle" TargetType="GroupBox">
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
+        <Style x:Key="LabelStyle" TargetType="Label">
+            <Setter Property="FontWeight" Value="Normal"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Width" Value="120"/>
+        </Style>
+
+        <Style x:Key="TextBoxStyle" TargetType="TextBox">
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+
+        <Style x:Key="CheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+
+        <Style x:Key="ButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="10,2"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- File Operations -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10">
+            <Button Name="LoadButton" Content="Load Settings" Style="{StaticResource ButtonStyle}" Click="LoadButton_Click"/>
+            <Button Name="SaveButton" Content="Save Settings" Style="{StaticResource ButtonStyle}" Click="SaveButton_Click"/>
+            <Button Name="SaveAsButton" Content="Save As..." Style="{StaticResource ButtonStyle}" Click="SaveAsButton_Click"/>
+            <TextBlock Name="CurrentFileLabel" VerticalAlignment="Center" Margin="20,0,0,0" Text="No file loaded" FontStyle="Italic"/>
+        </StackPanel>
+
+        <!-- Main Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="400"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left Column - Settings -->
+                <StackPanel Grid.Column="0" Margin="10">
+
+                    <!-- Character Sets -->
+                    <GroupBox Header="Character Sets" Style="{StaticResource GroupBoxStyle}">
+                        <StackPanel>
+                            <CheckBox Name="IncludeUppercaseCheck" Content="A-Z (Uppercase)" Style="{StaticResource CheckBoxStyle}"/>
+                            <CheckBox Name="IncludeLowercaseCheck" Content="a-z (Lowercase)" Style="{StaticResource CheckBoxStyle}" Margin="0,5,0,0"/>
+                            <CheckBox Name="IncludeNumbersCheck" Content="0-9 (Numbers)" Style="{StaticResource CheckBoxStyle}" Margin="0,5,0,0"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <Label Content="Special Chars:" Style="{StaticResource LabelStyle}"/>
+                                <TextBox Name="SpecialCharsTextBox" Style="{StaticResource TextBoxStyle}" Width="300" 
+                                         ToolTip="Enter special characters to include (e.g., !@#$%^&amp;*)"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Generation Mode -->
+                    <GroupBox Header="Generation Mode" Style="{StaticResource GroupBoxStyle}">
+                        <StackPanel>
+                            <RadioButton Name="PurelyRandomRadio" Content="Purely Random" GroupName="Mode" Checked="GenerationMode_Changed"/>
+                            <RadioButton Name="RuleBasedRadio" Content="Rule-Based" GroupName="Mode" Margin="0,5,0,0" Checked="GenerationMode_Changed"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Rules -->
+                    <GroupBox Name="RulesGroupBox" Header="Rules" Style="{StaticResource GroupBoxStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Start Rules -->
+                            <GroupBox Grid.Column="0" Header="Can Start With" Margin="5">
+                                <StackPanel>
+                                    <CheckBox Name="StartUppercaseCheck" Content="Uppercase" Style="{StaticResource CheckBoxStyle}"/>
+                                    <CheckBox Name="StartLowercaseCheck" Content="Lowercase" Style="{StaticResource CheckBoxStyle}" Margin="0,5,0,0"/>
+                                    <CheckBox Name="StartNumbersCheck" Content="Numbers" Style="{StaticResource CheckBoxStyle}" Margin="0,5,0,0"/>
+                                    <CheckBox Name="StartSpecialCheck" Content="Special Chars" Style="{StaticResource CheckBoxStyle}" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- End Rules -->
+                            <GroupBox Grid.Column="1" Header="Can End With" Margin="5">
+                                <StackPanel>
+                                    <CheckBox Name="EndUppercaseCheck" Content="Uppercase" Style="{StaticResource CheckBoxStyle}"/>
+                                    <CheckBox Name="EndLowercaseCheck" Content="Lowercase" Style="{StaticResource CheckBoxStyle}" Margin="0,5,0,0"/>
+                                    <CheckBox Name="EndNumbersCheck" Content="Numbers" Style="{StaticResource CheckBoxStyle}" Margin="0,5,0,0"/>
+                                    <CheckBox Name="EndSpecialCheck" Content="Special Chars" Style="{StaticResource CheckBoxStyle}" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </GroupBox>
+                        </Grid>
+                    </GroupBox>
+
+                    <!-- Length -->
+                    <GroupBox Header="Length" Style="{StaticResource GroupBoxStyle}">
+                        <StackPanel>
+                            <RadioButton Name="FixedLengthRadio" Content="Fixed Length" GroupName="Length" Checked="LengthMode_Changed"/>
+                            <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                                <Label Content="Length:" Width="80"/>
+                                <TextBox Name="FixedLengthTextBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            </StackPanel>
+
+                            <RadioButton Name="RangeLengthRadio" Content="Range" GroupName="Length" Margin="0,10,0,0" Checked="LengthMode_Changed"/>
+                            <StackPanel Orientation="Horizontal" Margin="20,5,0,0">
+                                <Label Content="Min:" Width="40"/>
+                                <TextBox Name="MinLengthTextBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                                <Label Content="Max:" Width="40" Margin="10,0,0,0"/>
+                                <TextBox Name="MaxLengthTextBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Quantity -->
+                    <GroupBox Header="Quantity" Style="{StaticResource GroupBoxStyle}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Label Content="Strings to Generate:" Style="{StaticResource LabelStyle}"/>
+                                <TextBox Name="QuantityTextBox" Style="{StaticResource TextBoxStyle}" Width="100"/>
+                            </StackPanel>
+                            <CheckBox Name="UniqueOnlyCheck" Content="Generate unique strings only (no duplicates)" 
+                                      Style="{StaticResource CheckBoxStyle}" Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- OCR Challenges -->
+                    <GroupBox Header="OCR Challenges (Optional)" Style="{StaticResource GroupBoxStyle}">
+                        <StackPanel>
+                            <CheckBox Name="OcrChallengesEnabledCheck" Content="Enable OCR confusion pairs" 
+                                      Style="{StaticResource CheckBoxStyle}" Checked="OcrChallenges_Changed" Unchecked="OcrChallenges_Changed"/>
+
+                            <StackPanel Name="OcrChallengesPanel" Margin="20,10,0,0" IsEnabled="False">
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Content="Confusion %:" Width="100"/>
+                                    <TextBox Name="ConfusionPercentageTextBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                                    <Label Content="%" Width="20"/>
+                                </StackPanel>
+
+                                <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" FontWeight="Normal" FontStyle="Italic">
+                                    Common confusion pairs: 0/O, 1/I/l, 5/S, 8/B, 2/Z, 6/b, etc.
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Output -->
+                    <GroupBox Header="Output" Style="{StaticResource GroupBoxStyle}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Label Content="Output File:" Style="{StaticResource LabelStyle}"/>
+                                <TextBox Name="OutputPathTextBox" Style="{StaticResource TextBoxStyle}" Width="300"/>
+                                <Button Content="Browse..." Style="{StaticResource ButtonStyle}" Click="BrowseOutput_Click"/>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <RadioButton Name="OverwriteRadio" Content="Overwrite existing file" GroupName="WriteMode"/>
+                                <RadioButton Name="AppendRadio" Content="Append to existing file" GroupName="WriteMode" Margin="20,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                </StackPanel>
+
+                <!-- Right Column - Preview & Generation -->
+                <StackPanel Grid.Column="1" Margin="10">
+
+                    <GroupBox Header="Preview" Style="{StaticResource GroupBoxStyle}" Height="500">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Button Grid.Row="0" Name="RegeneratePreviewButton" Content="Regenerate Preview" 
+                                    Style="{StaticResource ButtonStyle}" Click="RegeneratePreview_Click"/>
+
+                            <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Margin="0,5,0,5">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <TextBox Name="PreviewTextBox" FontFamily="Consolas" FontSize="11" 
+                                             IsReadOnly="True" TextWrapping="NoWrap" BorderThickness="0"/>
+                                </ScrollViewer>
+                            </Border>
+
+                            <TextBlock Grid.Row="2" Name="PreviewStatsLabel" Text="Click 'Regenerate Preview' to see samples" 
+                                       FontStyle="Italic" TextWrapping="Wrap"/>
+                        </Grid>
+                    </GroupBox>
+
+                    <GroupBox Header="Generation" Style="{StaticResource GroupBoxStyle}">
+                        <StackPanel>
+                            <TextBlock Name="StatusLabel" Text="Ready to generate" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                            <Button Name="GenerateButton" Content="Generate &amp; Save" 
+                                    Style="{StaticResource ButtonStyle}" Height="35" FontWeight="Bold" 
+                                    Click="Generate_Click"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                </StackPanel>
+
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

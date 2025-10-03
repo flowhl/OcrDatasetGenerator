@@ -11,5 +11,8 @@
     <Compile Update="Controls\OCRSettingsEditor.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Controls\StringGenerator.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
 </Project>
