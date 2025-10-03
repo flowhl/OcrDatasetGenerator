@@ -37,6 +37,7 @@ namespace OCRTrainingImageGenerator.Services
 
             // Create initial bitmap with proper text measurement
             var fontSize = (float)settings.FontSize.GetRandomValue(localRandom);
+            var characterSpacing = (float)settings.CharacterSpacing.GetRandomValue(localRandom);
             var marginLeft = (int)settings.Margins.Left.GetRandomValue(localRandom);
             var marginRight = (int)settings.Margins.Right.GetRandomValue(localRandom);
             var marginTop = (int)settings.Margins.Top.GetRandomValue(localRandom);
@@ -49,12 +50,12 @@ namespace OCRTrainingImageGenerator.Services
             try
             {
                 font = LoadFont(fontPath, fontSize);
-                textSize = MeasureText(text, font);
+                textSize = MeasureTextWithSpacing(text, font, characterSpacing);
             }
             catch
             {
                 font = new Font(FontFamily.GenericSansSerif, fontSize, FontStyle.Regular);
-                textSize = MeasureText(text, font);
+                textSize = MeasureTextWithSpacing(text, font, characterSpacing);
             }
 
             // Calculate total dimensions based on actual text size
@@ -74,7 +75,7 @@ namespace OCRTrainingImageGenerator.Services
                 DrawBackground(graphics, bitmap.Size, settings, localRandom);
 
                 // Draw text with proper vertical centering
-                DrawText(graphics, text, font, settings, localRandom,
+                DrawTextWithSpacing(graphics, text, font, characterSpacing, settings, localRandom,
                     new Rectangle(marginLeft, marginTop, textSize.Width, totalHeight - marginTop - marginBottom),
                     textSize);
 
@@ -85,6 +86,48 @@ namespace OCRTrainingImageGenerator.Services
                 mat = ApplyEffects(mat, settings, localRandom);
 
                 return mat;
+            }
+        }
+
+        /// <summary>
+        /// Generates a single OCR training image and applies JPG compression for preview
+        /// </summary>
+        /// <param name="settings">Generation settings</param>
+        /// <param name="text">Text to render</param>
+        /// <param name="fontPath">Path to the font file</param>
+        /// <returns>Generated image as OpenCV Mat with JPG compression applied</returns>
+        public Mat GenerateImageForPreview(OCRGenerationSettings settings, string text, string fontPath)
+        {
+            // Generate the base image
+            using (var baseMat = GenerateImage(settings, text, fontPath))
+            {
+                // Apply JPG compression if enabled
+                if (settings.EnableJpgArtifacts)
+                {
+                    Random localRandom;
+                    lock (_randomLock)
+                    {
+                        localRandom = new Random(_random.Next());
+                    }
+
+                    var quality = (int)settings.JpgQuality.GetRandomValue(localRandom);
+
+                    // Convert to JPG and back to simulate compression artifacts
+                    var compressionParams = new int[]
+                    {
+                        (int)ImwriteFlags.JpegQuality, quality
+                    };
+
+                    // Encode to JPG bytes
+                    Cv2.ImEncode(".jpg", baseMat, out byte[] jpgData, compressionParams);
+
+                    // Decode back to Mat
+                    return Cv2.ImDecode(jpgData, ImreadModes.Color);
+                }
+                else
+                {
+                    return baseMat.Clone();
+                }
             }
         }
 
@@ -324,26 +367,53 @@ namespace OCRTrainingImageGenerator.Services
             }
         }
 
-        private System.Drawing.Size MeasureText(string text, Font font)
+        private System.Drawing.Size MeasureTextWithSpacing(string text, Font font, float characterSpacing)
         {
             using (var tempBitmap = new Bitmap(1, 1))
             using (var tempGraphics = Graphics.FromImage(tempBitmap))
             {
                 tempGraphics.TextRenderingHint = TextRenderingHint.AntiAlias;
 
-                // Use MeasureString with StringFormat for more accurate measurement
-                var format = new StringFormat(StringFormat.GenericDefault)
+                if (Math.Abs(characterSpacing) < 0.01f)
                 {
-                    FormatFlags = StringFormatFlags.MeasureTrailingSpaces
-                };
+                    // Use standard measurement when no spacing (including very small values)
+                    var format = new StringFormat(StringFormat.GenericDefault)
+                    {
+                        FormatFlags = StringFormatFlags.MeasureTrailingSpaces
+                    };
 
-                var measured = tempGraphics.MeasureString(text, font, int.MaxValue, format);
+                    var measured = tempGraphics.MeasureString(text, font, int.MaxValue, format);
+                    return new System.Drawing.Size(
+                        (int)Math.Ceiling(measured.Width) + 4,
+                        (int)Math.Ceiling(measured.Height) + 2
+                    );
+                }
+                else
+                {
+                    // Calculate size with character spacing (positive or negative)
+                    var totalWidth = 0f;
+                    var maxHeight = font.GetHeight(tempGraphics);
 
-                // Add some padding to ensure text isn't clipped
-                return new System.Drawing.Size(
-                    (int)Math.Ceiling(measured.Width) + 4,
-                    (int)Math.Ceiling(measured.Height) + 2
-                );
+                    for (int i = 0; i < text.Length; i++)
+                    {
+                        var charSize = tempGraphics.MeasureString(text[i].ToString(), font);
+                        totalWidth += charSize.Width;
+
+                        // Add spacing between characters (but not after the last one)
+                        if (i < text.Length - 1)
+                        {
+                            totalWidth += characterSpacing;
+                        }
+                    }
+
+                    // Ensure minimum width of 1 pixel even with negative spacing
+                    totalWidth = Math.Max(1, totalWidth);
+
+                    return new System.Drawing.Size(
+                        (int)Math.Ceiling(totalWidth) + 4,
+                        (int)Math.Ceiling(maxHeight) + 2
+                    );
+                }
             }
         }
 
@@ -394,8 +464,8 @@ namespace OCRTrainingImageGenerator.Services
             }
         }
 
-        private void DrawText(Graphics graphics, string text, Font font, OCRGenerationSettings settings,
-            Random random, Rectangle bounds, System.Drawing.Size textSize)
+        private void DrawTextWithSpacing(Graphics graphics, string text, Font font, float characterSpacing,
+            OCRGenerationSettings settings, Random random, Rectangle bounds, System.Drawing.Size textSize)
         {
             // Get random foreground color
             var colorSetting = settings.ForegroundColors.Any()
@@ -405,20 +475,20 @@ namespace OCRTrainingImageGenerator.Services
             using (var brush = new SolidBrush(ColorFromSetting(colorSetting)))
             {
                 // Calculate precise positioning for proper alignment
-                float x = bounds.X;
+                float startX = bounds.X;
                 float y = bounds.Y;
 
                 // Horizontal alignment
                 switch (settings.HorizontalAlignment)
                 {
                     case TextAlignment.Left:
-                        x = bounds.X;
+                        startX = bounds.X;
                         break;
                     case TextAlignment.Center:
-                        x = bounds.X + (bounds.Width - textSize.Width) / 2.0f;
+                        startX = bounds.X + (bounds.Width - textSize.Width) / 2.0f;
                         break;
                     case TextAlignment.Right:
-                        x = bounds.X + bounds.Width - textSize.Width;
+                        startX = bounds.X + bounds.Width - textSize.Width;
                         break;
                 }
 
@@ -454,12 +524,38 @@ namespace OCRTrainingImageGenerator.Services
 
                     using (var shadowBrush = new SolidBrush(shadowColor))
                     {
-                        graphics.DrawString(text, font, shadowBrush, x + shadowOffsetX, y + shadowOffsetY);
+                        DrawTextWithSpacingAtPosition(graphics, text, font, characterSpacing, shadowBrush,
+                            startX + shadowOffsetX, y + shadowOffsetY);
                     }
                 }
 
                 // Draw main text at calculated position
+                DrawTextWithSpacingAtPosition(graphics, text, font, characterSpacing, brush, startX, y);
+            }
+        }
+
+        private void DrawTextWithSpacingAtPosition(Graphics graphics, string text, Font font, float characterSpacing,
+            Brush brush, float x, float y)
+        {
+            if (Math.Abs(characterSpacing) < 0.01f)
+            {
+                // Use standard text drawing when no significant spacing
                 graphics.DrawString(text, font, brush, x, y);
+            }
+            else
+            {
+                // Draw each character individually with spacing (positive or negative)
+                var currentX = x;
+
+                for (int i = 0; i < text.Length; i++)
+                {
+                    var character = text[i].ToString();
+                    graphics.DrawString(character, font, brush, currentX, y);
+
+                    // Measure the character to advance position
+                    var charSize = graphics.MeasureString(character, font);
+                    currentX += charSize.Width + characterSpacing;
+                }
             }
         }
 
