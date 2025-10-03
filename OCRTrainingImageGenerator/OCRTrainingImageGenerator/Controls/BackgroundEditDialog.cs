@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using OCRTrainingImageGenerator.Models;
@@ -11,6 +10,11 @@ using Color = System.Windows.Media.Color;
 using MessageBox = System.Windows.MessageBox;
 using Orientation = System.Windows.Controls.Orientation;
 using Rectangle = System.Windows.Shapes.Rectangle;
+using TextBox = System.Windows.Controls.TextBox;
+using Button = System.Windows.Controls.Button;
+using ComboBox = System.Windows.Controls.ComboBox;
+using Label = System.Windows.Controls.Label;
+
 
 namespace OCRTrainingImageGenerator.Controls
 {
@@ -18,14 +22,14 @@ namespace OCRTrainingImageGenerator.Controls
     {
         public BackgroundSetting BackgroundSetting { get; private set; }
 
-        private System.Windows.Controls.TextBox NameTextBox;
-        private System.Windows.Controls.ComboBox TypeComboBox;
+        private TextBox NameTextBox;
+        private ComboBox TypeComboBox;
         private StackPanel SolidColorPanel;
         private StackPanel GradientPanel;
         private Rectangle SolidColorRect;
         private Rectangle GradientStartRect;
         private Rectangle GradientEndRect;
-        private System.Windows.Controls.TextBox AngleTextBox;
+        private TextBox AngleTextBox;
 
         public BackgroundEditDialog(BackgroundSetting background)
         {
@@ -48,7 +52,7 @@ namespace OCRTrainingImageGenerator.Controls
             mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
             // Title
-            var titleLabel = new System.Windows.Controls.Label
+            var titleLabel = new Label
             {
                 Content = "Background Settings",
                 FontSize = 16,
@@ -65,15 +69,15 @@ namespace OCRTrainingImageGenerator.Controls
 
             // Name
             var namePanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 5) };
-            namePanel.Children.Add(new System.Windows.Controls.Label { Content = "Name:", Width = 80 });
-            NameTextBox = new System.Windows.Controls.TextBox { Width = 250, Height = 25 };
+            namePanel.Children.Add(new Label { Content = "Name:", Width = 80 });
+            NameTextBox = new TextBox { Width = 250, Height = 25 };
             namePanel.Children.Add(NameTextBox);
             settingsPanel.Children.Add(namePanel);
 
             // Type
             var typePanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 5) };
-            typePanel.Children.Add(new System.Windows.Controls.Label { Content = "Type:", Width = 80 });
-            TypeComboBox = new System.Windows.Controls.ComboBox { Width = 150, Height = 25 };
+            typePanel.Children.Add(new Label { Content = "Type:", Width = 80 });
+            TypeComboBox = new ComboBox { Width = 150, Height = 25 };
             TypeComboBox.ItemsSource = Enum.GetValues(typeof(BackgroundType));
             TypeComboBox.SelectionChanged += TypeComboBox_SelectionChanged;
             typePanel.Children.Add(TypeComboBox);
@@ -81,14 +85,14 @@ namespace OCRTrainingImageGenerator.Controls
 
             // Solid Color Panel
             SolidColorPanel = new StackPanel { Margin = new Thickness(0, 15, 0, 0) };
-            var solidColorHeader = new System.Windows.Controls.Label { Content = "Solid Color", FontWeight = FontWeights.Bold };
+            var solidColorHeader = new Label { Content = "Solid Color", FontWeight = FontWeights.Bold };
             SolidColorPanel.Children.Add(solidColorHeader);
 
             var solidColorControls = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 0) };
-            solidColorControls.Children.Add(new System.Windows.Controls.Label { Content = "Color:", Width = 80 });
+            solidColorControls.Children.Add(new Label { Content = "Color:", Width = 80 });
             SolidColorRect = new Rectangle { Width = 40, Height = 25, Stroke = Brushes.Black, StrokeThickness = 1 };
             solidColorControls.Children.Add(SolidColorRect);
-            var changeSolidButton = new System.Windows.Controls.Button { Content = "Change", Width = 80, Height = 25, Margin = new Thickness(10, 0, 0, 0) };
+            var changeSolidButton = new Button { Content = "Change", Width = 80, Height = 25, Margin = new Thickness(10, 0, 0, 0) };
             changeSolidButton.Click += ChangeSolidColor_Click;
             solidColorControls.Children.Add(changeSolidButton);
             SolidColorPanel.Children.Add(solidColorControls);
@@ -96,35 +100,35 @@ namespace OCRTrainingImageGenerator.Controls
 
             // Gradient Panel
             GradientPanel = new StackPanel { Margin = new Thickness(0, 15, 0, 0) };
-            var gradientHeader = new System.Windows.Controls.Label { Content = "Gradient", FontWeight = FontWeights.Bold };
+            var gradientHeader = new Label { Content = "Gradient", FontWeight = FontWeights.Bold };
             GradientPanel.Children.Add(gradientHeader);
 
             // Start Color
             var startColorControls = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 0) };
-            startColorControls.Children.Add(new System.Windows.Controls.Label { Content = "Start Color:", Width = 80 });
+            startColorControls.Children.Add(new Label { Content = "Start Color:", Width = 80 });
             GradientStartRect = new Rectangle { Width = 40, Height = 25, Stroke = Brushes.Black, StrokeThickness = 1 };
             startColorControls.Children.Add(GradientStartRect);
-            var changeStartButton = new System.Windows.Controls.Button { Content = "Change", Width = 80, Height = 25, Margin = new Thickness(10, 0, 0, 0) };
+            var changeStartButton = new Button { Content = "Change", Width = 80, Height = 25, Margin = new Thickness(10, 0, 0, 0) };
             changeStartButton.Click += ChangeGradientStart_Click;
             startColorControls.Children.Add(changeStartButton);
             GradientPanel.Children.Add(startColorControls);
 
             // End Color
             var endColorControls = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 5, 0, 0) };
-            endColorControls.Children.Add(new System.Windows.Controls.Label { Content = "End Color:", Width = 80 });
+            endColorControls.Children.Add(new Label { Content = "End Color:", Width = 80 });
             GradientEndRect = new Rectangle { Width = 40, Height = 25, Stroke = Brushes.Black, StrokeThickness = 1 };
             endColorControls.Children.Add(GradientEndRect);
-            var changeEndButton = new System.Windows.Controls.Button { Content = "Change", Width = 80, Height = 25, Margin = new Thickness(10, 0, 0, 0) };
+            var changeEndButton = new Button { Content = "Change", Width = 80, Height = 25, Margin = new Thickness(10, 0, 0, 0) };
             changeEndButton.Click += ChangeGradientEnd_Click;
             endColorControls.Children.Add(changeEndButton);
             GradientPanel.Children.Add(endColorControls);
 
             // Angle
             var angleControls = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0) };
-            angleControls.Children.Add(new System.Windows.Controls.Label { Content = "Angle:", Width = 80 });
-            AngleTextBox = new System.Windows.Controls.TextBox { Width = 100, Height = 25 };
+            angleControls.Children.Add(new Label { Content = "Angle:", Width = 80 });
+            AngleTextBox = new TextBox { Width = 100, Height = 25 };
             angleControls.Children.Add(AngleTextBox);
-            angleControls.Children.Add(new System.Windows.Controls.Label { Content = " degrees", Margin = new Thickness(5, 0, 0, 0) });
+            angleControls.Children.Add(new Label { Content = " degrees", Margin = new Thickness(5, 0, 0, 0) });
             GradientPanel.Children.Add(angleControls);
 
             settingsPanel.Children.Add(GradientPanel);
@@ -139,7 +143,7 @@ namespace OCRTrainingImageGenerator.Controls
             };
             Grid.SetRow(buttonPanel, 2);
 
-            var okButton = new System.Windows.Controls.Button
+            var okButton = new Button
             {
                 Content = "OK",
                 Width = 75,
@@ -150,7 +154,7 @@ namespace OCRTrainingImageGenerator.Controls
             okButton.Click += OkButton_Click;
             buttonPanel.Children.Add(okButton);
 
-            var cancelButton = new System.Windows.Controls.Button
+            var cancelButton = new Button
             {
                 Content = "Cancel",
                 Width = 75,
@@ -235,15 +239,14 @@ namespace OCRTrainingImageGenerator.Controls
 
         private Color? ChooseColor(Color initialColor)
         {
-            var dialog = new ColorDialog
+            var dialog = new ColorPickerDialog(initialColor)
             {
-                Color = System.Drawing.Color.FromArgb(initialColor.A, initialColor.R, initialColor.G, initialColor.B),
-                FullOpen = true
+                Owner = this
             };
 
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (dialog.ShowDialog() == true)
             {
-                return Color.FromArgb(dialog.Color.A, dialog.Color.R, dialog.Color.G, dialog.Color.B);
+                return dialog.SelectedColor;
             }
             return null;
         }

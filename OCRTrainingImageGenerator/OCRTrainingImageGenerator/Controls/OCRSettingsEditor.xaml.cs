@@ -21,6 +21,7 @@ using System.Windows.Threading;
 using Color = System.Windows.Media.Color;
 using VerticalAlignment = OCRTrainingImageGenerator.Models.VerticalAlignment;
 using TextAlignment = OCRTrainingImageGenerator.Models.TextAlignment;
+using Window = System.Windows.Window;
 
 namespace OCRTrainingImageGenerator.Controls
 {
@@ -795,15 +796,14 @@ namespace OCRTrainingImageGenerator.Controls
 
         private Color? ChooseColor(Color initialColor)
         {
-            var dialog = new ColorDialog
+            var dialog = new ColorPickerDialog(initialColor)
             {
-                Color = System.Drawing.Color.FromArgb(initialColor.A, initialColor.R, initialColor.G, initialColor.B),
-                FullOpen = true
+                Owner = Window.GetWindow(this)
             };
 
-            if (dialog.ShowDialog() == DialogResult.OK)
+            if (dialog.ShowDialog() == true)
             {
-                return Color.FromArgb(dialog.Color.A, dialog.Color.R, dialog.Color.G, dialog.Color.B);
+                return dialog.SelectedColor;
             }
             return null;
         }
