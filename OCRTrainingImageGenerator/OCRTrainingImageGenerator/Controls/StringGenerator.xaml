@@ -77,6 +77,50 @@
                         </StackPanel>
                     </GroupBox>
 
+                    <!-- Character Distribution -->
+                    <GroupBox Header="Character Distribution (%)" Style="{StaticResource GroupBoxStyle}">
+                        <StackPanel>
+                            <TextBlock FontWeight="Normal" FontStyle="Italic" TextWrapping="Wrap" Margin="0,0,0,10">
+                                Adjust how often each character type appears (relative weights, don't need to add up to 100)
+                            </TextBlock>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <Label Content="Uppercase:" Width="100"/>
+                                        <TextBox Name="UppercasePercentageBox" Style="{StaticResource TextBoxStyle}" Width="50"/>
+                                        <Label Content="%" Width="20"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <Label Content="Lowercase:" Width="100"/>
+                                        <TextBox Name="LowercasePercentageBox" Style="{StaticResource TextBoxStyle}" Width="50"/>
+                                        <Label Content="%" Width="20"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1">
+                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <Label Content="Numbers:" Width="100"/>
+                                        <TextBox Name="NumbersPercentageBox" Style="{StaticResource TextBoxStyle}" Width="50"/>
+                                        <Label Content="%" Width="20"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <Label Content="Special Chars:" Width="100"/>
+                                        <TextBox Name="SpecialCharsPercentageBox" Style="{StaticResource TextBoxStyle}" Width="50"/>
+                                        <Label Content="%" Width="20"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
+
                     <!-- Generation Mode -->
                     <GroupBox Header="Generation Mode" Style="{StaticResource GroupBoxStyle}">
                         <StackPanel>
@@ -149,18 +193,19 @@
                     <!-- OCR Challenges -->
                     <GroupBox Header="OCR Challenges (Optional)" Style="{StaticResource GroupBoxStyle}">
                         <StackPanel>
-                            <CheckBox Name="OcrChallengesEnabledCheck" Content="Enable OCR confusion pairs" 
+                            <CheckBox Name="OcrChallengesEnabledCheck" Content="Insert OCR confusion character sequences" 
                                       Style="{StaticResource CheckBoxStyle}" Checked="OcrChallenges_Changed" Unchecked="OcrChallenges_Changed"/>
 
                             <StackPanel Name="OcrChallengesPanel" Margin="20,10,0,0" IsEnabled="False">
                                 <StackPanel Orientation="Horizontal">
-                                    <Label Content="Confusion %:" Width="100"/>
-                                    <TextBox Name="ConfusionPercentageTextBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
+                                    <Label Content="Insertion %:" Width="100"/>
+                                    <TextBox Name="InsertionPercentageTextBox" Style="{StaticResource TextBoxStyle}" Width="60"/>
                                     <Label Content="%" Width="20"/>
                                 </StackPanel>
 
                                 <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" FontWeight="Normal" FontStyle="Italic">
-                                    Common confusion pairs: 0/O, 1/I/l, 5/S, 8/B, 2/Z, 6/b, etc.
+                                    Inserts confusable character sequences like "I1l", "O0o", "5Ss", "8B" into strings.
+                                    Example: "user" → "userI1l" or "O0ouser"
                                 </TextBlock>
                             </StackPanel>
                         </StackPanel>

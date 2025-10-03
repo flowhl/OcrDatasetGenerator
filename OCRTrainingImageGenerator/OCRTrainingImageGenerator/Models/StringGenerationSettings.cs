@@ -8,6 +8,7 @@ namespace OCRTrainingImageGenerator.Models
     public class StringGenerationSettings
     {
         public CharacterSetSettings CharacterSets { get; set; } = new CharacterSetSettings();
+        public CharacterDistribution Distribution { get; set; } = new CharacterDistribution();
         public GenerationMode Mode { get; set; } = GenerationMode.RuleBased;
         public StartEndRules StartRules { get; set; } = new StartEndRules();
         public StartEndRules EndRules { get; set; } = new StartEndRules();
@@ -50,7 +51,26 @@ namespace OCRTrainingImageGenerator.Models
     public class OcrChallengeSettings
     {
         public bool Enabled { get; set; } = false;
-        public int ConfusionPercentage { get; set; } = 20;
+        public int InsertionPercentage { get; set; } = 20;
+    }
+
+    [Serializable]
+    public class CharacterDistribution
+    {
+        public int UppercasePercentage { get; set; } = 25;
+        public int LowercasePercentage { get; set; } = 25;
+        public int NumbersPercentage { get; set; } = 25;
+        public int SpecialCharsPercentage { get; set; } = 25;
+
+        public void Normalize()
+        {
+            var total = UppercasePercentage + LowercasePercentage + NumbersPercentage + SpecialCharsPercentage;
+            if (total == 0)
+            {
+                // Equal distribution if all are 0
+                UppercasePercentage = LowercasePercentage = NumbersPercentage = SpecialCharsPercentage = 25;
+            }
+        }
     }
 
     public enum GenerationMode

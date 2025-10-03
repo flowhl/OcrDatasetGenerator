@@ -21,55 +21,44 @@ namespace OCRTrainingImageGenerator.Controls
         private string _currentFilePath;
         private Random _random = new Random();
 
-        // OCR confusion pairs - filtered to only include valid characters
-        private Dictionary<char, char[]> _confusionPairs;
+        // OCR confusion sequences - groups of confusable characters
+        private List<string> _confusionSequences;
 
         public StringGenerator()
         {
             InitializeComponent();
             _settings = new StringGenerationSettings();
-            InitializeConfusionPairs();
+            InitializeConfusionSequences();
             LoadSettingsToUI();
         }
 
-        private void InitializeConfusionPairs()
+        private void InitializeConfusionSequences()
         {
-            // Build confusion pairs based on current character sets
-            _confusionPairs = new Dictionary<char, char[]>();
+            // Build confusion sequences based on current character sets
+            _confusionSequences = new List<string>();
 
             var allChars = BuildCharacterPool().ToHashSet();
 
-            // Define all potential confusion pairs
-            var potentialPairs = new Dictionary<char, char[]>
+            // Define potential confusion groups
+            var potentialGroups = new List<string>
             {
-                { '0', new[] { 'O', 'o' } },
-                { 'O', new[] { '0', 'o' } },
-                { 'o', new[] { '0', 'O' } },
-                { '1', new[] { 'I', 'l', '|' } },
-                { 'I', new[] { '1', 'l', '|' } },
-                { 'l', new[] { '1', 'I', '|' } },
-                { '5', new[] { 'S', 's' } },
-                { 'S', new[] { '5', 's' } },
-                { 's', new[] { '5', 'S' } },
-                { '8', new[] { 'B' } },
-                { 'B', new[] { '8', 'b' } },
-                { 'b', new[] { '6', 'B' } },
-                { '2', new[] { 'Z', 'z' } },
-                { 'Z', new[] { '2', 'z' } },
-                { 'z', new[] { '2', 'Z' } },
-                { '6', new[] { 'b' } },
+                "0Oo",
+                "1Il|",
+                "5Ss",
+                "8B",
+                "8Bb",
+                "2Zz",
+                "6b",
+                "I1l",
+                "O0o",
             };
 
-            // Only include pairs where both the source and target characters are in the character set
-            foreach (var kvp in potentialPairs)
+            // Only include sequences where all characters are in the character set
+            foreach (var group in potentialGroups)
             {
-                if (allChars.Contains(kvp.Key))
+                if (group.All(c => allChars.Contains(c)))
                 {
-                    var validTargets = kvp.Value.Where(c => allChars.Contains(c)).ToArray();
-                    if (validTargets.Length > 0)
-                    {
-                        _confusionPairs[kvp.Key] = validTargets;
-                    }
+                    _confusionSequences.Add(group);
                 }
             }
         }
@@ -81,6 +70,12 @@ namespace OCRTrainingImageGenerator.Controls
             IncludeLowercaseCheck.IsChecked = _settings.CharacterSets.IncludeLowercase;
             IncludeNumbersCheck.IsChecked = _settings.CharacterSets.IncludeNumbers;
             SpecialCharsTextBox.Text = _settings.CharacterSets.SpecialCharacters;
+
+            // Character Distribution
+            UppercasePercentageBox.Text = _settings.Distribution.UppercasePercentage.ToString();
+            LowercasePercentageBox.Text = _settings.Distribution.LowercasePercentage.ToString();
+            NumbersPercentageBox.Text = _settings.Distribution.NumbersPercentage.ToString();
+            SpecialCharsPercentageBox.Text = _settings.Distribution.SpecialCharsPercentage.ToString();
 
             // Generation Mode
             if (_settings.Mode == GenerationMode.RuleBased)
@@ -119,7 +114,7 @@ namespace OCRTrainingImageGenerator.Controls
 
             // OCR Challenges
             OcrChallengesEnabledCheck.IsChecked = _settings.OcrChallenges.Enabled;
-            ConfusionPercentageTextBox.Text = _settings.OcrChallenges.ConfusionPercentage.ToString();
+            InsertionPercentageTextBox.Text = _settings.OcrChallenges.InsertionPercentage.ToString();
 
             // Output
             OutputPathTextBox.Text = _settings.OutputPath;
@@ -138,6 +133,18 @@ namespace OCRTrainingImageGenerator.Controls
             _settings.CharacterSets.IncludeLowercase = IncludeLowercaseCheck.IsChecked == true;
             _settings.CharacterSets.IncludeNumbers = IncludeNumbersCheck.IsChecked == true;
             _settings.CharacterSets.SpecialCharacters = SpecialCharsTextBox.Text;
+
+            // Character Distribution
+            if (int.TryParse(UppercasePercentageBox.Text, out int upperPct))
+                _settings.Distribution.UppercasePercentage = upperPct;
+            if (int.TryParse(LowercasePercentageBox.Text, out int lowerPct))
+                _settings.Distribution.LowercasePercentage = lowerPct;
+            if (int.TryParse(NumbersPercentageBox.Text, out int numPct))
+                _settings.Distribution.NumbersPercentage = numPct;
+            if (int.TryParse(SpecialCharsPercentageBox.Text, out int specialPct))
+                _settings.Distribution.SpecialCharsPercentage = specialPct;
+
+            _settings.Distribution.Normalize();
 
             // Generation Mode
             _settings.Mode = RuleBasedRadio.IsChecked == true ? GenerationMode.RuleBased : GenerationMode.PurelyRandom;
@@ -170,8 +177,8 @@ namespace OCRTrainingImageGenerator.Controls
 
             // OCR Challenges
             _settings.OcrChallenges.Enabled = OcrChallengesEnabledCheck.IsChecked == true;
-            if (int.TryParse(ConfusionPercentageTextBox.Text, out int confusionPct))
-                _settings.OcrChallenges.ConfusionPercentage = confusionPct;
+            if (int.TryParse(InsertionPercentageTextBox.Text, out int insertionPct))
+                _settings.OcrChallenges.InsertionPercentage = insertionPct;
 
             // Output
             _settings.OutputPath = OutputPathTextBox.Text;
@@ -307,7 +314,7 @@ namespace OCRTrainingImageGenerator.Controls
         private void RegeneratePreview_Click(object sender, RoutedEventArgs e)
         {
             SaveUIToSettings();
-            InitializeConfusionPairs(); // Rebuild confusion pairs based on current settings
+            InitializeConfusionSequences(); // Rebuild confusion sequences based on current settings
 
             try
             {
@@ -335,7 +342,7 @@ namespace OCRTrainingImageGenerator.Controls
         private void Generate_Click(object sender, RoutedEventArgs e)
         {
             SaveUIToSettings();
-            InitializeConfusionPairs(); // Rebuild confusion pairs based on current settings
+            InitializeConfusionSequences(); // Rebuild confusion sequences based on current settings
 
             // Validation
             if (!ValidateSettings())
@@ -505,10 +512,10 @@ namespace OCRTrainingImageGenerator.Controls
 
                 var str = GenerateSingleString(length, allChars, startChars, endChars);
 
-                // Apply OCR confusion if enabled
-                if (_settings.OcrChallenges.Enabled && _random.Next(100) < _settings.OcrChallenges.ConfusionPercentage)
+                // Apply OCR confusion sequences if enabled
+                if (_settings.OcrChallenges.Enabled && _random.Next(100) < _settings.OcrChallenges.InsertionPercentage)
                 {
-                    str = ApplyOcrConfusion(str);
+                    str = InsertConfusionSequence(str);
                 }
 
                 // Check uniqueness if required
@@ -552,10 +559,11 @@ namespace OCRTrainingImageGenerator.Controls
             // First character
             sb.Append(startChars[_random.Next(startChars.Count)]);
 
-            // Middle characters
+            // Middle characters - use weighted distribution
+            var weightedPool = BuildWeightedCharacterPool();
             for (int i = 1; i < length - 1; i++)
             {
-                sb.Append(allChars[_random.Next(allChars.Count)]);
+                sb.Append(weightedPool[_random.Next(weightedPool.Count)]);
             }
 
             // Last character
@@ -564,21 +572,89 @@ namespace OCRTrainingImageGenerator.Controls
             return sb.ToString();
         }
 
-        private string ApplyOcrConfusion(string input)
+        private string InsertConfusionSequence(string input)
         {
-            var sb = new StringBuilder(input);
+            if (_confusionSequences.Count == 0)
+                return input;
 
-            // Randomly replace some characters with their confusion pairs
-            for (int i = 0; i < sb.Length; i++)
+            // Pick a random confusion sequence
+            var sequence = _confusionSequences[_random.Next(_confusionSequences.Count)];
+
+            // Randomly insert at beginning, middle, or end
+            var position = _random.Next(3);
+
+            switch (position)
             {
-                if (_confusionPairs.ContainsKey(sb[i]) && _random.Next(100) < 30) // 30% chance per character
-                {
-                    var confusionOptions = _confusionPairs[sb[i]];
-                    sb[i] = confusionOptions[_random.Next(confusionOptions.Length)];
-                }
+                case 0: // Beginning
+                    return sequence + input;
+                case 1: // Middle
+                    var midPoint = input.Length / 2;
+                    return input.Insert(midPoint, sequence);
+                case 2: // End
+                default:
+                    return input + sequence;
+            }
+        }
+
+        private List<char> BuildWeightedCharacterPool()
+        {
+            var pool = new List<char>();
+
+            // Build pools for each character type
+            var uppercaseChars = new List<char>();
+            var lowercaseChars = new List<char>();
+            var numberChars = new List<char>();
+            var specialChars = new List<char>();
+
+            if (_settings.CharacterSets.IncludeUppercase)
+            {
+                for (char c = 'A'; c <= 'Z'; c++)
+                    uppercaseChars.Add(c);
             }
 
-            return sb.ToString();
+            if (_settings.CharacterSets.IncludeLowercase)
+            {
+                for (char c = 'a'; c <= 'z'; c++)
+                    lowercaseChars.Add(c);
+            }
+
+            if (_settings.CharacterSets.IncludeNumbers)
+            {
+                for (char c = '0'; c <= '9'; c++)
+                    numberChars.Add(c);
+            }
+
+            if (!string.IsNullOrEmpty(_settings.CharacterSets.SpecialCharacters))
+            {
+                specialChars.AddRange(_settings.CharacterSets.SpecialCharacters.ToCharArray());
+            }
+
+            // Add characters according to their weights
+            var dist = _settings.Distribution;
+
+            // Add each type proportionally to its percentage
+            for (int i = 0; i < dist.UppercasePercentage && uppercaseChars.Count > 0; i++)
+                pool.AddRange(uppercaseChars);
+
+            for (int i = 0; i < dist.LowercasePercentage && lowercaseChars.Count > 0; i++)
+                pool.AddRange(lowercaseChars);
+
+            for (int i = 0; i < dist.NumbersPercentage && numberChars.Count > 0; i++)
+                pool.AddRange(numberChars);
+
+            for (int i = 0; i < dist.SpecialCharsPercentage && specialChars.Count > 0; i++)
+                pool.AddRange(specialChars);
+
+            // Fallback: if pool is empty (all percentages 0), use equal distribution
+            if (pool.Count == 0)
+            {
+                pool.AddRange(uppercaseChars);
+                pool.AddRange(lowercaseChars);
+                pool.AddRange(numberChars);
+                pool.AddRange(specialChars);
+            }
+
+            return pool;
         }
 
         private List<char> BuildCharacterPool()
