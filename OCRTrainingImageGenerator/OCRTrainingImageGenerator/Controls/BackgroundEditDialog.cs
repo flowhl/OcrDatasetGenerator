@@ -42,9 +42,8 @@ namespace OCRTrainingImageGenerator.Controls
         {
             Title = "Edit Background";
             Width = 450;
-            Height = 400;
+            Height = 500;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            ResizeMode = ResizeMode.NoResize;
 
             var mainGrid = new Grid();
             mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
